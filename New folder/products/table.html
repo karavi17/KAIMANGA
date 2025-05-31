@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mirror - Maa Furniture</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
+    <style>
+        .product-page {
+            padding-top: 80px;
+        }
+        
+        .product-hero {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+                        url('../product image/mirror.jpg') center/cover fixed;
+            height: 50vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #fff;
+            position: relative;
+        }
+        
+        .product-content {
+            padding: 5rem 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .product-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            margin-bottom: 4rem;
+        }
+        
+        .product-images {
+            position: relative;
+        }
+        
+        .main-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+        }
+        
+        .thumbnail-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+        
+        .thumbnail {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .thumbnail:hover {
+            transform: scale(1.05);
+        }
+        
+        .product-details h1 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .product-description {
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+        
+        .product-features {
+            margin-bottom: 2rem;
+        }
+        
+        .feature-list {
+            list-style: none;
+        }
+        
+        .feature-list li {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .feature-list i {
+            color: var(--secondary);
+            margin-right: 1rem;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .enquiry-button {
+            padding: 1rem 2rem;
+            background: var(--secondary);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .enquiry-button:hover {
+            background: var(--accent);
+            transform: translateY(-2px);
+        }
+        
+        .related-products {
+            margin-top: 4rem;
+        }
+        
+        .related-products h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .product-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .thumbnail-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="logo">
+                <h1>Maa Furniture</h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../collections.html">Collections</a></li>
+                <li><a href="../about.html">About</a></li>
+                <li><a href="../contact.html">Contact</a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <main class="product-page">
+        <section class="product-hero">
+            <div class="hero-content" data-aos="fade-up">
+                <h1>Luxury Sofa Set</h1>
+                <p class="tagline">Comfort meets elegance in your living room</p>
+            </div>
+        </section>
+
+        <section class="product-content">
+            <div class="product-grid">
+                <div class="product-images" data-aos="fade-right">
+                    <img src="../product image/mirror.jpg" alt="Luxury Sofa Set" class="main-image">
+                    <div class="thumbnail-grid">
+                        <img src="../product image/20201004_164223.jpg" alt="Thumbnail 1" class="thumbnail">
+                        <img src="../product image/20201004_164223.jpg" alt="Thumbnail 2" class="thumbnail">
+                        <img src="../product image/20201004_164223.jpg" alt="Thumbnail 3" class="thumbnail">
+                        <img src="../product image/20201004_164223.jpg" alt="Thumbnail 4" class="thumbnail">
+                    </div>
+                </div>
+                
+                <div class="product-details" data-aos="fade-left">
+                    <h1>Luxury Sofa Set</h1>
+                    <div class="product-description">
+                        <p>Our Luxury Sofa Set is designed to provide ultimate comfort while adding a touch of elegance to your living space. Crafted with premium materials and attention to detail, this sofa set is perfect for both relaxation and entertaining guests.</p>
+                    </div>
+                    
+                    <div class="product-features">
+                        <h3>Key Features</h3>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Premium quality fabric upholstery</li>
+                            <li><i class="fas fa-check"></i> Sturdy wooden frame construction</li>
+                            <li><i class="fas fa-check"></i> High-density foam cushions</li>
+                            <li><i class="fas fa-check"></i> Elegant design with modern aesthetics</li>
+                            <li><i class="fas fa-check"></i> Easy to maintain and clean</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="product-actions">
+                        <a href="../contact.html" class="enquiry-button">Make an Enquiry</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="related-products">
+                <h2 data-aos="fade-up">Related Products</h2>
+                <div class="related-grid">
+                    <div class="collection-item" data-aos="fade-up" data-aos-delay="100">
+                        <img src="../product image/20201004_164223.jpg" alt="Coffee Table">
+                        <div class="collection-content">
+                            <h3>Coffee Table</h3>
+                            <p>Perfect complement to your sofa set</p>
+                            <a href="coffee-table.html" class="view-more">View Details</a>
+                        </div>
+                    </div>
+                    <div class="collection-item" data-aos="fade-up" data-aos-delay="200">
+                        <img src="../product image/20201004_164223.jpg" alt="TV Unit">
+                        <div class="collection-content">
+                            <h3>TV Unit</h3>
+                            <p>Stylish storage solution for your living room</p>
+                            <a href="tv-unit.html" class="view-more">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Maa Furniture</h3>
+                <p>Creating beautiful spaces since 2000</p>
+                <p class="footer-description">Your trusted partner in crafting premium furniture that transforms spaces into beautiful, functional environments.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../collections.html">Collections</a></li>
+                    <li><a href="../about.html">About Us</a></li>
+                    <li><a href="../contact.html">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Contact Info</h3>
+                <div class="contact-info">
+                    <p><i class="fas fa-phone"></i> 8920972658</p>
+                    <p><i class="fas fa-envelope"></i> jamivishwakarma@gmail.com</p>
+                    <p><i class="fas fa-clock"></i> Mon-Sat: 9:00 AM - 8:00 PM</p>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Newsletter</h3>
+                <p>Subscribe to our newsletter for updates and offers</p>
+                <form class="newsletter-form">
+                    <input type="email" placeholder="Enter your email" required>
+                    <button type="submit">Subscribe</button>
+                </form>
+                <div class="social-links">
+                    <a href="#" title="Facebook"><i class="fab fa-facebook"></i></a>
+                    <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="#" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Maa Furniture. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script src="../script.js"></script>
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 1000,
+            once: true,
+            offset: 100
+        });
+
+        // Image gallery functionality
+        const mainImage = document.querySelector('.main-image');
+        const thumbnails = document.querySelectorAll('.thumbnail');
+
+        thumbnails.forEach(thumbnail => {
+            thumbnail.addEventListener('click', () => {
+                mainImage.src = thumbnail.src;
+                thumbnails.forEach(t => t.classList.remove('active'));
+                thumbnail.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html> 
