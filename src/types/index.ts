@@ -32,6 +32,7 @@ export interface ChapterImages {
   title: string;
   mangaId: string;
   mangaTitle: string;
+  mangaImage?: string;
   images: string[];
   prevChapter: string | null;
   nextChapter: string | null;

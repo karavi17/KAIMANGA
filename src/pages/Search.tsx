@@ -1,40 +1,55 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { mangaService } from '../services/api';
-import type { SearchResult } from '../types';
+import type { SearchResult, Manga } from '../types';
 import { MangaCard } from '../components/MangaCard';
-import { Loader2, Search as SearchIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Search as SearchIcon, Plus } from 'lucide-react';
 
 export const Search = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
-  const page = parseInt(searchParams.get('page') || '1');
   
+  const [mangas, setMangas] = useState<Manga[]>([]);
   const [data, setData] = useState<SearchResult | null>(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMangas([]);
+    setPage(1);
+  }, [query]);
 
   useEffect(() => {
     const fetchData = async () => {
       if (!query) return;
       try {
-        setLoading(true);
+        if (page === 1) {
+          setLoading(true);
+        } else {
+          setLoadingMore(true);
+        }
+        
         const searchData = await mangaService.searchManga(query, page);
         setData(searchData);
-        window.scrollTo(0, 0);
+        setMangas(prev => page === 1 ? searchData.mangas : [...prev, ...searchData.mangas]);
       } catch (err) {
         setError('Failed to search manga.');
         console.error(err);
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     };
 
     fetchData();
   }, [query, page]);
 
-  const handlePageChange = (newPage: number) => {
-    setSearchParams({ q: query, page: newPage.toString() });
+  const handleLoadMore = () => {
+    if (data?.hasNextPage && !loadingMore) {
+      setPage(prev => prev + 1);
+    }
   };
 
   if (!query) {
@@ -46,7 +61,7 @@ export const Search = () => {
     );
   }
 
-  if (loading) {
+  if (loading && page === 1) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-10 w-10 text-indigo-500 animate-spin" />
@@ -75,42 +90,38 @@ export const Search = () => {
           <h2 className="text-2xl font-bold text-gray-100">
             Search Results for <span className="text-indigo-500">"{query}"</span>
           </h2>
-          {data && (
-            <p className="text-sm text-gray-400 mt-1">Found {data.totalMangas} results</p>
-          )}
         </div>
-        
-        {/* Pagination */}
-        {data && data.totalPages > 1 && (
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={() => handlePageChange(page - 1)}
-              disabled={page === 1}
-              className="p-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-30 rounded-lg transition"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <span className="text-sm font-medium text-gray-200">
-              Page {page} of {data.totalPages}
-            </span>
-            <button 
-              onClick={() => handlePageChange(page + 1)}
-              disabled={!data.hasNextPage}
-              className="p-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-30 rounded-lg transition"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-        {data?.mangas.map((manga) => (
-          <MangaCard key={manga.id} manga={manga} />
+        {mangas.map((manga, index) => (
+          <MangaCard key={`${manga.id}-${index}`} manga={manga} />
         ))}
       </div>
 
-      {data?.mangas.length === 0 && (
+      {data?.hasNextPage && (
+        <div className="flex justify-center pt-12 pb-8">
+          <button
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="flex items-center px-12 py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-full text-lg font-black uppercase tracking-widest transition-all shadow-xl hover:shadow-orange-500/40 disabled:opacity-50 active:scale-95"
+          >
+            {loadingMore ? (
+              <>
+                <Loader2 className="h-6 w-6 mr-3 animate-spin" />
+                Showing More...
+              </>
+            ) : (
+              <>
+                <Plus className="h-6 w-6 mr-3" />
+                Load More Manga
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {mangas.length === 0 && !loading && (
         <div className="text-center py-20 text-gray-400">
           <p className="text-lg">No manga found for "{query}".</p>
         </div>

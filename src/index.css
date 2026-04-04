@@ -1,10 +1,18 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(html.dark, html.dark *));
+
 :root {
   --mk-orange: #ff6600;
   --mk-bg: #e9ebee;
   --mk-border: #dae0e6;
   --mk-text: #333;
+}
+
+html.dark {
+  --mk-bg: #030712;
+  --mk-border: #1f2937;
+  --mk-text: #f3f4f6;
 }
 
 body {
@@ -45,6 +53,11 @@ body {
   border: 1px solid var(--mk-border);
   padding: 15px;
   margin-bottom: 20px;
+}
+
+html.dark .white-box {
+  background: #111827;
+  border-color: #374151;
 }
 
 /* Custom scrollbar */
