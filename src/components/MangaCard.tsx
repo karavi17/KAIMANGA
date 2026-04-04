@@ -1,0 +1,40 @@
+import { Link } from 'react-router-dom';
+import type { Manga } from '../types';
+import { getImageUrl } from '../utils/image';
+import { ChevronRight } from 'lucide-react';
+
+interface MangaCardProps {
+  manga: Manga;
+}
+
+export const MangaCard = ({ manga }: MangaCardProps) => {
+  return (
+    <div className="relative group bg-white border border-gray-200 shadow-sm rounded overflow-hidden">
+      <Link 
+        to={`/manga/${manga.id}`} 
+        className="block aspect-[3/4] overflow-hidden"
+      >
+        <img 
+          src={getImageUrl(manga.image)} 
+          alt={manga.title} 
+          className="object-cover w-full h-full transition duration-500 group-hover:scale-110"
+          loading="lazy"
+        />
+        {manga.latestChapter && (
+          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-1 text-[10px] text-center backdrop-blur-sm group-hover:bg-orange-600/80 transition">
+            {manga.latestChapter.name}
+          </div>
+        )}
+      </Link>
+      <div className="p-2">
+        <Link 
+          to={`/manga/${manga.id}`}
+          className="text-xs font-bold text-gray-800 line-clamp-1 hover:text-orange-600 transition flex items-center"
+        >
+          {manga.title}
+          <ChevronRight className="h-3 w-3 ml-auto opacity-0 group-hover:opacity-100 transition" />
+        </Link>
+      </div>
+    </div>
+  );
+};
