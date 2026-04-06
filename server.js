@@ -4,8 +4,12 @@ import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import * as cheerio from 'cheerio';
 import NodeCache from 'node-cache';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
 const app = express();
@@ -26,6 +30,10 @@ const dataCache = new NodeCache({ stdTTL: 3600 });
 const imageCache = new NodeCache({ stdTTL: 86400 });
 
 app.use(cors());
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'dist')));
+
 app.use('/api/manga', router);
 
 const BASE_URL = 'https://www.mangakakalot.fan';
@@ -882,6 +890,12 @@ router.get('/read/:mangaId/:chapterId', async (req, res) => {
     console.error(`Read error (${mangaId}/${chapterId}):`, error.message);
     res.status(500).json({ error: error.message });
   }
+});
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(PORT, () => {
