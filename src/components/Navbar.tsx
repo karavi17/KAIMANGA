@@ -1,4 +1,4 @@
-import { Search, Share2, History, Bookmark, Sun, Moon, Loader2 } from 'lucide-react';
+import { Search, Share2, History, Bookmark, Sun, Moon, Loader2, Menu, X, MessageCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import logo from '../assets/logo.webp';
@@ -12,9 +12,15 @@ export const Navbar = () => {
   const [suggestions, setSuggestions] = useState<Manga[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const searchRef = useRef<HTMLDivElement>(null);
+
+  // Close mobile menu when navigating
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [navigate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -69,16 +75,26 @@ export const Navbar = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm dark:bg-gray-900 dark:shadow-black/20 transition-colors">
+    <header className="bg-white shadow-sm dark:bg-gray-900 dark:shadow-black/20 transition-colors relative z-50">
       <div className="container-custom py-4 flex flex-col md:flex-row items-center justify-between gap-4">
-        <Link to="/" className="flex items-center space-x-2">
-          <img src={logo} alt="KaiManga" className="h-12 w-12 rounded-lg object-cover" />
-          <span className="text-3xl font-bold tracking-tight text-gray-800 dark:text-gray-100">
-            Kai<span className="text-orange-600">Manga</span>
-          </span>
-        </Link>
+        <div className="flex items-center justify-between w-full md:w-auto">
+          <Link to="/" className="flex items-center space-x-2">
+            <img src={logo} alt="KaiManga" className="h-10 w-10 md:h-12 md:w-12 rounded-lg object-cover" />
+            <span className="text-2xl md:text-3xl font-bold tracking-tight text-gray-800 dark:text-gray-100">
+              Kai<span className="text-orange-600">Manga</span>
+            </span>
+          </Link>
 
-        <div className="flex-1 max-w-xl mx-4 relative" ref={searchRef}>
+          {/* Mobile Menu Button */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+          >
+            {isMobileMenuOpen ? <X className="h-6 w-6 text-orange-600" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
+
+        <div className="flex-1 w-full max-w-xl md:mx-4 relative" ref={searchRef}>
           <form onSubmit={handleSearch}>
             <input
               type="text"
@@ -148,7 +164,7 @@ export const Navbar = () => {
           )}
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="hidden md:flex items-center space-x-4">
           <div className="flex space-x-2">
             <Link to="/fanpage" className="bg-blue-600 text-white px-3 py-1 text-xs font-bold rounded flex items-center space-x-1 hover:bg-blue-700 transition">
               <Share2 className="h-3 w-3" />
@@ -180,11 +196,113 @@ export const Navbar = () => {
             <Link to="/history">
               <History className="h-5 w-5 hover:text-orange-500 cursor-pointer" />
             </Link>
+            <div className="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
+            <a 
+              href="https://www.instagram.com/kaimangaofficial/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-500 dark:text-gray-400 hover:text-pink-500 transition transform hover:scale-110"
+              title="Instagram"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            </a>
           </div>
         </div>
       </div>
 
-      <nav className="bg-orange-600 shadow-lg">
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-full left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-xl py-4 px-4 flex flex-col space-y-4 animate-in slide-in-from-top duration-200">
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center space-x-4">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-amber-300 transition flex items-center gap-2"
+              >
+                {theme === 'dark' ? <><Sun className="h-5 w-5" /> Light</> : <><Moon className="h-5 w-5" /> Dark</>}
+              </button>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link to="/bookmarks" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 font-medium">
+                <Bookmark className="h-5 w-5 text-orange-500" />
+                Bookmarks
+              </Link>
+              <Link to="/history" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 font-medium">
+                <History className="h-5 w-5 text-orange-500" />
+                History
+              </Link>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/fanpage" className="bg-blue-600 text-white px-4 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition text-sm">
+              <Share2 className="h-4 w-4" />
+              Fanpage
+            </Link>
+            <a 
+              href="https://discord.gg/7GeMpXYV" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="bg-indigo-500 text-white px-4 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-indigo-600 transition text-sm"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Discord
+            </a>
+          </div>
+
+          <div className="flex items-center justify-center gap-6 py-2 border-t border-gray-100 dark:border-gray-800">
+            <a 
+              href="https://www.instagram.com/kaimangaofficial/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-600 dark:text-gray-400 hover:text-pink-500 transition transform hover:scale-110"
+              title="Instagram"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            </a>
+            <a 
+              href="#" 
+              onClick={(e) => e.preventDefault()}
+              className="text-gray-600 dark:text-gray-400 hover:text-red-500 transition transform hover:scale-110 opacity-50 cursor-not-allowed"
+              title="YouTube (Coming Soon)"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.42a2.78 2.78 0 0 0-1.94 2C1 8.11 1 12 1 12s0 3.89.46 5.58a2.78 2.78 0 0 0 1.94 2c1.72.42 8.6.42 8.6.42s6.88 0 8.6-.42a2.78 2.78 0 0 0 1.94-2C23 15.89 23 12 23 12s0-3.89-.46-5.58z"></path><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"></polygon></svg>
+            </a>
+            <a 
+              href="#" 
+              onClick={(e) => e.preventDefault()}
+              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 transition transform hover:scale-110 opacity-50 cursor-not-allowed"
+              title="Facebook (Coming Soon)"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+            </a>
+          </div>
+
+          <nav className="border-t border-gray-100 dark:border-gray-800 pt-4">
+            <ul className="flex flex-col space-y-1">
+              {[
+                { label: 'Home', path: '/' },
+                { label: 'Latest Manga', path: '/browse/latest' },
+                { label: 'Hot Manga', path: '/browse/hot' },
+                { label: 'New Manga', path: '/browse/new' },
+                { label: 'Completed Manga', path: '/browse/completed' },
+              ].map((item) => (
+                <li key={item.path}>
+                  <Link 
+                    to={item.path} 
+                    className="px-4 py-3 block font-bold text-gray-800 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-orange-900/10 hover:text-orange-600 rounded-lg transition uppercase text-sm"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      )}
+
+      <nav className="hidden md:block bg-orange-600 shadow-lg">
         <div className="container-custom">
           <ul className="flex flex-wrap items-center text-white text-sm font-bold uppercase overflow-x-auto whitespace-nowrap">
             <li>
@@ -214,3 +332,4 @@ export const Navbar = () => {
     </header>
   );
 };
+

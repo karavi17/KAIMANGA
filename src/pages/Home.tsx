@@ -3,7 +3,7 @@ import { mangaService } from '../services/api';
 import type { HomeData } from '../types';
 import { MangaCard } from '../components/MangaCard';
 import { Sidebar } from '../components/Sidebar';
-import { Loader2, ChevronRight, BookOpen } from 'lucide-react';
+import { Loader2, ChevronRight, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const INITIAL_GRID = 8;
@@ -14,8 +14,12 @@ export const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visiblePopular, setVisiblePopular] = useState(INITIAL_GRID);
+  const [showNotice, setShowNotice] = useState(false);
 
   useEffect(() => {
+    // Show notice by default on desktop, hidden on mobile
+    setShowNotice(window.innerWidth > 768);
+
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -62,14 +66,27 @@ export const Home = () => {
     <div className="container-custom py-6">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
-          <div className="white-box border-2 border-orange-500 p-4 rounded text-sm text-gray-700 dark:text-gray-300">
-            <h3 className="font-bold flex items-center mb-1 text-orange-600">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Important Notice!
-            </h3>
-            <p>
-              To ensure you always have easy access to our site, we highly recommend bookmarking our website. Due to search engine updates, our website may not always appear in Google search results.
-            </p>
+          <div className="white-box border-2 border-orange-500 p-0 rounded overflow-hidden">
+            <button 
+              onClick={() => setShowNotice(!showNotice)}
+              className="w-full px-4 py-3 flex items-center justify-between bg-orange-50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20 transition-colors"
+            >
+              <h3 className="font-bold flex items-center text-orange-600">
+                <BookOpen className="h-4 w-4 mr-2" />
+                Important Notice!
+              </h3>
+              <div className="md:hidden">
+                {showNotice ? <ChevronUp className="h-4 w-4 text-orange-600" /> : <ChevronDown className="h-4 w-4 text-orange-600" />}
+              </div>
+            </button>
+            
+            {showNotice && (
+              <div className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border-t border-orange-100 dark:border-orange-900/20 animate-in fade-in slide-in-from-top-1 duration-200">
+                <p>
+                  To ensure you always have easy access to our site, we highly recommend bookmarking our website. Due to search engine updates, our website may not always appear in Google search results.
+                </p>
+              </div>
+            )}
           </div>
 
           <section className="white-box p-0 overflow-hidden">
