@@ -49,6 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
+    localStorage.removeItem('bookmarks');
+    window.dispatchEvent(new Event('bookmarksUpdated'));
   };
 
   const fetchBookmarksFromDB = async (authToken: string) => {
@@ -84,9 +86,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 2. Fetch all bookmarks from DB (including merged ones)
       await fetchBookmarksFromDB(authToken);
     } catch (err) {
-       console.error('Failed to sync/fetch bookmarks:', err);
-     }
-   };
+      console.error('Failed to sync/fetch bookmarks:', err);
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
