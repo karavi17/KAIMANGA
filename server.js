@@ -8,8 +8,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 import mysql from 'mysql2/promise';
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -22,100 +20,51 @@ const PORT = process.env.PORT || 3000;
 const router = express.Router();
 const JWT_SECRET = 'kai_manga_secret_key_2026';
 
-// Global CORS - Permissive for debugging
-app.use(cors());
-app.use(express.json());
-
-// Add Request Logging Middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
+// MySQL Connection Pool
+const pool = mysql.createPool({
+  host: 'sql208.infinityfree.com',
+  user: 'if0_41593312',
+  password: 'eC2UtBeyJ5zdEwS',
+  database: 'if0_41593312_kai',
+  port: 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-// Database selection and setup
-let db;
-const isProd = process.env.NODE_ENV === 'production';
-const useSQLite = !process.env.MYSQL_HOST; // Default to SQLite unless MySQL host is provided
-
+// Initialize database tables
 async function initDb() {
-  const sqliteInit = async () => {
-    db = await open({
-      filename: path.join(__dirname, 'database.sqlite'),
-      driver: sqlite3.Database
-    });
-    console.log('Connected to SQLite database');
+  try {
+    const connection = await pool.getConnection();
+    console.log('Connected to MySQL database');
     
-    await db.exec(`
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    await db.exec(`
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS bookmarks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        manga_id TEXT NOT NULL,
-        title TEXT NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        manga_id VARCHAR(255) NOT NULL,
+        title VARCHAR(255) NOT NULL,
         image TEXT NOT NULL,
-        latest_chapter_name TEXT,
-        latest_chapter_id TEXT,
+        latest_chapter_name VARCHAR(255),
+        latest_chapter_id VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, manga_id),
+        UNIQUE KEY unique_bookmark (user_id, manga_id),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
-  };
-
-  try {
-    if (useSQLite) {
-      await sqliteInit();
-    } else {
-      const pool = mysql.createPool({
-        host: process.env.MYSQL_HOST || 'sql208.infinityfree.com',
-        user: process.env.MYSQL_USER || 'if0_41593312',
-        password: process.env.MYSQL_PASSWORD || 'eC2UtBeyJ5zdEwS',
-        database: process.env.MYSQL_DATABASE || 'if0_41593312_kai',
-        port: parseInt(process.env.MYSQL_PORT || '3306'),
-        waitForConnections: true,
-        connectionLimit: 10,
-        queueLimit: 0,
-        connectTimeout: 10000
-      });
-
-      // Test connection
-      try {
-        const conn = await pool.getConnection();
-        conn.release();
-        
-        // Mock db object to match sqlite interface
-        db = {
-          query: (sql, params) => pool.query(sql, params),
-          exec: (sql) => pool.query(sql),
-          get: async (sql, params) => {
-            const [rows] = await pool.query(sql, params);
-            return rows[0];
-          },
-          all: async (sql, params) => {
-            const [rows] = await pool.query(sql, params);
-            return rows;
-          },
-          run: async (sql, params) => {
-            const [result] = await pool.query(sql, params);
-            return { lastID: result.insertId, changes: result.affectedRows };
-          }
-        };
-        console.log('Connected to MySQL database');
-      } catch (mysqlErr) {
-        console.warn('MySQL connection failed, falling back to SQLite:', mysqlErr.message);
-        await sqliteInit();
-      }
-    }
+    
+    connection.release();
   } catch (err) {
-    console.error('Database initialization error:', err.message);
+    console.error('MySQL initialization error:', err.message);
   }
 }
 
@@ -133,6 +82,9 @@ axiosRetry(axios, {
 // Cache setup: 1 hour for data, 24 hours for images
 const dataCache = new NodeCache({ stdTTL: 3600 });
 const imageCache = new NodeCache({ stdTTL: 86400 });
+
+app.use(cors());
+app.use(express.json());
 
 // Auth Middlewares
 const authenticateToken = (req, res, next) => {
@@ -155,15 +107,11 @@ app.post('/api/auth/register', async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const result = await db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword]);
-    const userId = result.lastID;
-    const token = jwt.sign({ id: userId, username }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, user: { id: userId, username } });
+    const [result] = await pool.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword]);
+    const token = jwt.sign({ id: result.insertId, username }, JWT_SECRET, { expiresIn: '7d' });
+    res.status(201).json({ token, user: { id: result.insertId, username } });
   } catch (err) {
-    if (err.code === 'SQLITE_CONSTRAINT' || err.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ message: 'Username already exists' });
-    }
-    console.error('Registration error:', err);
+    if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ message: 'Username already exists' });
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -171,16 +119,16 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
   try {
-    const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    const [rows] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+    if (rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
     
+    const user = rows[0];
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, username: user.username } });
   } catch (err) {
-    console.error('Login error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -188,7 +136,7 @@ app.post('/api/auth/login', async (req, res) => {
 // Bookmark Sync Routes
 app.get('/api/sync/bookmarks', authenticateToken, async (req, res) => {
   try {
-    const rows = await db.all('SELECT * FROM bookmarks WHERE user_id = ?', [req.user.id]);
+    const [rows] = await pool.query('SELECT * FROM bookmarks WHERE user_id = ?', [req.user.id]);
     const bookmarks = rows.map(r => ({
       id: r.manga_id,
       title: r.title,
@@ -209,54 +157,9 @@ app.post('/api/sync/bookmarks', authenticateToken, async (req, res) => {
   if (!Array.isArray(bookmarks)) return res.status(400).json({ message: 'Invalid data' });
 
   try {
+    // Basic bulk insert/update
     for (const b of bookmarks) {
-      if (useSQLite) {
-        await db.run(
-          `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
-           VALUES (?, ?, ?, ?, ?, ?) 
-           ON CONFLICT(user_id, manga_id) DO UPDATE SET 
-           title = excluded.title, 
-           image = excluded.image, 
-           latest_chapter_name = excluded.latest_chapter_name, 
-           latest_chapter_id = excluded.latest_chapter_id`,
-          [req.user.id, b.id, b.title, b.image, b.latestChapter?.name, b.latestChapter?.id]
-        );
-      } else {
-        await db.run(
-          `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
-           VALUES (?, ?, ?, ?, ?, ?) 
-           ON DUPLICATE KEY UPDATE 
-           title = VALUES(title), 
-           image = VALUES(image), 
-           latest_chapter_name = VALUES(latest_chapter_name), 
-           latest_chapter_id = VALUES(latest_chapter_id)`,
-          [req.user.id, b.id, b.title, b.image, b.latestChapter?.name, b.latestChapter?.id]
-        );
-      }
-    }
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Sync bookmarks error:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-app.post('/api/sync/add-bookmark', authenticateToken, async (req, res) => {
-  const { manga } = req.body;
-  try {
-    if (useSQLite) {
-      await db.run(
-        `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
-         VALUES (?, ?, ?, ?, ?, ?) 
-         ON CONFLICT(user_id, manga_id) DO UPDATE SET 
-         title = excluded.title, 
-         image = excluded.image, 
-         latest_chapter_name = excluded.latest_chapter_name, 
-         latest_chapter_id = excluded.latest_chapter_id`,
-        [req.user.id, manga.id, manga.title, manga.image, manga.latestChapter?.name, manga.latestChapter?.id]
-      );
-    } else {
-      await db.run(
+      await pool.query(
         `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
          VALUES (?, ?, ?, ?, ?, ?) 
          ON DUPLICATE KEY UPDATE 
@@ -264,9 +167,28 @@ app.post('/api/sync/add-bookmark', authenticateToken, async (req, res) => {
          image = VALUES(image), 
          latest_chapter_name = VALUES(latest_chapter_name), 
          latest_chapter_id = VALUES(latest_chapter_id)`,
-        [req.user.id, manga.id, manga.title, manga.image, manga.latestChapter?.name, manga.latestChapter?.id]
+        [req.user.id, b.id, b.title, b.image, b.latestChapter?.name, b.latestChapter?.id]
       );
     }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.post('/api/sync/add-bookmark', authenticateToken, async (req, res) => {
+  const { manga } = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
+       VALUES (?, ?, ?, ?, ?, ?) 
+       ON DUPLICATE KEY UPDATE 
+       title = VALUES(title), 
+       image = VALUES(image), 
+       latest_chapter_name = VALUES(latest_chapter_name), 
+       latest_chapter_id = VALUES(latest_chapter_id)`,
+      [req.user.id, manga.id, manga.title, manga.image, manga.latestChapter?.name, manga.latestChapter?.id]
+    );
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -276,16 +198,17 @@ app.post('/api/sync/add-bookmark', authenticateToken, async (req, res) => {
 app.post('/api/sync/remove-bookmark', authenticateToken, async (req, res) => {
   const { mangaId } = req.body;
   try {
-    await db.run('DELETE FROM bookmarks WHERE user_id = ? AND manga_id = ?', [req.user.id, mangaId]);
+    await pool.query('DELETE FROM bookmarks WHERE user_id = ? AND manga_id = ?', [req.user.id, mangaId]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));
+
+app.use('/api/manga', router);
 
 const BASE_URL = 'https://www.mangakakalot.fan';
 const HEADERS = {
@@ -1143,10 +1066,8 @@ router.get('/read/:mangaId/:chapterId', async (req, res) => {
   }
 });
 
-// Mounting router AFTER all routes are defined
-app.use('/api/manga', router);
-
-// The "catchall" handler
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });

@@ -26,5 +26,8 @@ node_modules
 *.sln
 *.sw?
 
-# SQLite database
-database.sqlite
+# Database
+*.sqlite
+*.db
+*.sql
+.env
