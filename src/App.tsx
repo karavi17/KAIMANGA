@@ -66,8 +66,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
+  const isGithubPages = window.location.hostname.includes('github.io');
+  
   return (
-    <Router>
+    <Router basename={isGithubPages ? '/KAIMANGA' : ''}>
       <ScrollToTop />
       <Layout>
         <Routes>
