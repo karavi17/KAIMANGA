@@ -90,7 +90,7 @@ export const Details = () => {
             <div className="shadow-2xl rounded-xl overflow-hidden border border-gray-300 dark:border-gray-800">
               <img src={getImageUrl(data.image)} alt={data.title} className="w-full h-auto" />
             </div>
-            <BookmarkButton manga={{ id: mangaSlug, title: data.title, image: data.image }} className="w-full" />
+            <BookmarkButton manga={{ id: mangaSlug, title: data.title, image: data.image }} />
             <button 
               type="button"
               onClick={handleShare}

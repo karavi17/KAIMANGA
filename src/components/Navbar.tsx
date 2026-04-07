@@ -1,11 +1,13 @@
-import { Search, Share2, History, Bookmark, Sun, Moon, Menu, X, MessageCircle } from 'lucide-react';
+import { Search, Share2, History, Bookmark, Sun, Moon, Menu, X, MessageCircle, User, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import logo from '../assets/logo.webp';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { mangaService } from '../services/api';
 import { getImageUrl } from '../utils/image';
 import { LoadingSpinner } from './LoadingSpinner';
+import { AuthModal } from './AuthModal';
 import type { Manga } from '../types';
 
 export const Navbar = () => {
@@ -14,8 +16,10 @@ export const Navbar = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { user, logout, isAuthenticated } = useAuth();
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Close mobile menu when navigating
@@ -206,22 +210,71 @@ export const Navbar = () => {
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
             </a>
+
+            <div className="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-orange-600 truncate max-w-[100px] hidden lg:block">
+                  {user?.username}
+                </span>
+                <button
+                  onClick={logout}
+                  className="p-2 text-gray-500 hover:text-red-500 transition"
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="p-2 text-gray-500 hover:text-orange-600 transition flex items-center gap-1"
+                title="Login / Register"
+              >
+                <User className="h-5 w-5" />
+                <span className="text-sm font-bold hidden lg:block">Login</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-xl py-4 px-4 flex flex-col space-y-4 animate-in slide-in-from-top duration-200">
           <div className="flex items-center justify-between px-2">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               <button
                 type="button"
                 onClick={toggleTheme}
                 className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-amber-300 transition flex items-center gap-2"
               >
-                {theme === 'dark' ? <><Sun className="h-5 w-5" /> Light</> : <><Moon className="h-5 w-5" /> Dark</>}
+                {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
+              
+              {isAuthenticated ? (
+                <button
+                  onClick={logout}
+                  className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 transition flex items-center gap-2"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsAuthModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 transition flex items-center gap-2"
+                >
+                  <User className="h-5 w-5" />
+                  <span>Login</span>
+                </button>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <Link to="/bookmarks" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 font-medium">
