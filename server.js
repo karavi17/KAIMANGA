@@ -28,37 +28,41 @@ const isProd = process.env.NODE_ENV === 'production';
 const useSQLite = !process.env.MYSQL_HOST; // Default to SQLite unless MySQL host is provided
 
 async function initDb() {
+  const sqliteInit = async () => {
+    db = await open({
+      filename: path.join(__dirname, 'database.sqlite'),
+      driver: sqlite3.Database
+    });
+    console.log('Connected to SQLite database');
+    
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS bookmarks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        manga_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        image TEXT NOT NULL,
+        latest_chapter_name TEXT,
+        latest_chapter_id TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, manga_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+  };
+
   try {
     if (useSQLite) {
-      db = await open({
-        filename: path.join(__dirname, 'database.sqlite'),
-        driver: sqlite3.Database
-      });
-      console.log('Connected to SQLite database');
-      
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS users (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          username TEXT UNIQUE NOT NULL,
-          password TEXT NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS bookmarks (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER NOT NULL,
-          manga_id TEXT NOT NULL,
-          title TEXT NOT NULL,
-          image TEXT NOT NULL,
-          latest_chapter_name TEXT,
-          latest_chapter_id TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          UNIQUE(user_id, manga_id),
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-      `);
+      await sqliteInit();
     } else {
       const pool = mysql.createPool({
         host: process.env.MYSQL_HOST || 'sql208.infinityfree.com',
@@ -68,26 +72,37 @@ async function initDb() {
         port: parseInt(process.env.MYSQL_PORT || '3306'),
         waitForConnections: true,
         connectionLimit: 10,
-        queueLimit: 0
+        queueLimit: 0,
+        connectTimeout: 10000
       });
-      // Mock db object to match sqlite interface
-      db = {
-        query: (sql, params) => pool.query(sql, params),
-        exec: (sql) => pool.query(sql),
-        get: async (sql, params) => {
-          const [rows] = await pool.query(sql, params);
-          return rows[0];
-        },
-        all: async (sql, params) => {
-          const [rows] = await pool.query(sql, params);
-          return rows;
-        },
-        run: async (sql, params) => {
-          const [result] = await pool.query(sql, params);
-          return { lastID: result.insertId, changes: result.affectedRows };
-        }
-      };
-      console.log('Connected to MySQL database');
+
+      // Test connection
+      try {
+        const conn = await pool.getConnection();
+        conn.release();
+        
+        // Mock db object to match sqlite interface
+        db = {
+          query: (sql, params) => pool.query(sql, params),
+          exec: (sql) => pool.query(sql),
+          get: async (sql, params) => {
+            const [rows] = await pool.query(sql, params);
+            return rows[0];
+          },
+          all: async (sql, params) => {
+            const [rows] = await pool.query(sql, params);
+            return rows;
+          },
+          run: async (sql, params) => {
+            const [result] = await pool.query(sql, params);
+            return { lastID: result.insertId, changes: result.affectedRows };
+          }
+        };
+        console.log('Connected to MySQL database');
+      } catch (mysqlErr) {
+        console.warn('MySQL connection failed, falling back to SQLite:', mysqlErr.message);
+        await sqliteInit();
+      }
     }
   } catch (err) {
     console.error('Database initialization error:', err.message);
