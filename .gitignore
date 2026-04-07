@@ -9,7 +9,10 @@ lerna-debug.log*
 
 # Dependency directories
 node_modules
-dist-ssr
+# Allow tracking build outputs for hosting (GitHub Pages / InfinityFree)
+# If you prefer to ignore in future, uncomment the lines below.
+# dist
+# dist-ssr
 *.local
 
 # Editor directories and files
