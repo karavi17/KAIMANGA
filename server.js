@@ -283,10 +283,10 @@ app.post('/api/sync/remove-bookmark', authenticateToken, async (req, res) => {
 });
 
 
+app.use('/api/manga', router);
+
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));
-
-app.use('/api/manga', router);
 
 const BASE_URL = 'https://www.mangakakalot.fan';
 const HEADERS = {
