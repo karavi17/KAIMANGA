@@ -22,7 +22,7 @@ export const Sidebar = ({ popularMangas = [] }: { popularMangas?: any[] }) => {
   return (
     <aside className="space-y-6">
       {/* Community Section */}
-      <div className="white-box p-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg border-none">
+      <div className="p-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg border-none">
         <h3 className="text-lg font-bold mb-3 flex items-center gap-2 text-white">
           <Share2 className="h-5 w-5" />
           Join Our Community
