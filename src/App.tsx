@@ -7,6 +7,7 @@ import { Search } from './pages/Search';
 import { Browse } from './pages/Browse';
 import { Bookmarks } from './pages/Bookmarks';
 import { History } from './pages/History';
+import { Fanpage } from './pages/FanPage';
 import { useEffect, useState } from 'react';
 import { ChevronUp } from 'lucide-react';
 
@@ -78,6 +79,7 @@ function App() {
           <Route path="/browse/:type" element={<Browse />} />
           <Route path="/bookmarks" element={<Bookmarks />} />
           <Route path="/history" element={<History />} />
+          <Route path="/fanpage" element={<Fanpage />} />
           <Route path="/manga/:id" element={<Details />} />
           <Route path="/manga/:id/:chapterId" element={<Reader />} />
         </Routes>

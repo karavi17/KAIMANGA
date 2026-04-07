@@ -150,11 +150,18 @@ export const Navbar = () => {
 
         <div className="flex items-center space-x-4">
           <div className="flex space-x-2">
-            <button type="button" className="bg-blue-600 text-white px-3 py-1 text-xs font-bold rounded flex items-center space-x-1">
+            <Link to="/fanpage" className="bg-blue-600 text-white px-3 py-1 text-xs font-bold rounded flex items-center space-x-1 hover:bg-blue-700 transition">
               <Share2 className="h-3 w-3" />
               <span>Fanpage</span>
-            </button>
-            <button type="button" className="bg-indigo-500 text-white px-3 py-1 text-xs font-bold rounded">Discord</button>
+            </Link>
+            <a 
+              href="https://discord.gg/7GeMpXYV" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="bg-indigo-500 text-white px-3 py-1 text-xs font-bold rounded hover:bg-indigo-600 transition"
+            >
+              Discord
+            </a>
           </div>
 
           <div className="flex items-center space-x-3 text-gray-500 dark:text-gray-400">

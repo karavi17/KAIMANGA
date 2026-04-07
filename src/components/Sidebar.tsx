@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Clock } from 'lucide-react';
+import { ChevronRight, Clock, MessageCircle, Share2 } from 'lucide-react';
 import { getImageUrl } from '../utils/image';
 
 const GENRES = [
@@ -21,6 +21,35 @@ export const Sidebar = ({ popularMangas = [] }: { popularMangas?: any[] }) => {
 
   return (
     <aside className="space-y-6">
+      {/* Community Section */}
+      <div className="white-box p-4 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow-lg border-none">
+        <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+          <Share2 className="h-5 w-5" />
+          Join Our Community
+        </h3>
+        <p className="text-xs text-orange-50 mb-4 leading-relaxed">
+          Get the latest updates, chat with other fans, and stay connected with KaiManga!
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <Link 
+            to="/fanpage" 
+            className="flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm px-3 py-2 rounded font-bold text-xs transition"
+          >
+            <Share2 className="h-4 w-4" />
+            Fanpage
+          </Link>
+          <a 
+            href="https://discord.gg/7GeMpXYV" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 px-3 py-2 rounded font-bold text-xs transition shadow-md"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Discord
+          </a>
+        </div>
+      </div>
+
       {/* History section */}
       <div className="white-box p-0 overflow-hidden">
         <div className="bg-orange-600 text-white px-4 py-2 flex justify-between items-center text-sm font-bold uppercase">
