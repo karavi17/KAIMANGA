@@ -111,8 +111,12 @@ app.post('/api/auth/register', async (req, res) => {
     const token = jwt.sign({ id: result.insertId, username }, JWT_SECRET, { expiresIn: '7d' });
     res.status(201).json({ token, user: { id: result.insertId, username } });
   } catch (err) {
+    console.error('Register error:', err.message);
     if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ message: 'Username already exists' });
-    res.status(500).json({ message: 'Server error' });
+    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
+    }
+    res.status(500).json({ message: 'Server error: ' + err.message });
   }
 });
 
@@ -129,7 +133,11 @@ app.post('/api/auth/login', async (req, res) => {
     const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, username: user.username } });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login error:', err.message);
+    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
+    }
+    res.status(500).json({ message: 'Server error: ' + err.message });
   }
 });
 
@@ -148,6 +156,10 @@ app.get('/api/sync/bookmarks', authenticateToken, async (req, res) => {
     }));
     res.json(bookmarks);
   } catch (err) {
+    console.error('Sync get error:', err.message);
+    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -172,6 +184,10 @@ app.post('/api/sync/bookmarks', authenticateToken, async (req, res) => {
     }
     res.json({ success: true });
   } catch (err) {
+    console.error('Sync post error:', err.message);
+    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -191,6 +207,10 @@ app.post('/api/sync/add-bookmark', authenticateToken, async (req, res) => {
     );
     res.json({ success: true });
   } catch (err) {
+    console.error('Add bookmark error:', err.message);
+    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -201,6 +221,10 @@ app.post('/api/sync/remove-bookmark', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM bookmarks WHERE user_id = ? AND manga_id = ?', [req.user.id, mangaId]);
     res.json({ success: true });
   } catch (err) {
+    console.error('Remove bookmark error:', err.message);
+    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
