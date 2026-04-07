@@ -22,6 +22,15 @@ const PORT = process.env.PORT || 3000;
 const router = express.Router();
 const JWT_SECRET = 'kai_manga_secret_key_2026';
 
+// Global CORS - MOVE TO TOP
+app.use(cors({
+  origin: ['https://karavi17.github.io', 'http://localhost:5173', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+app.use(express.json());
+
 // Database selection and setup
 let db;
 const isProd = process.env.NODE_ENV === 'production';
@@ -123,9 +132,6 @@ axiosRetry(axios, {
 // Cache setup: 1 hour for data, 24 hours for images
 const dataCache = new NodeCache({ stdTTL: 3600 });
 const imageCache = new NodeCache({ stdTTL: 86400 });
-
-app.use(cors());
-app.use(express.json());
 
 // Auth Middlewares
 const authenticateToken = (req, res, next) => {
