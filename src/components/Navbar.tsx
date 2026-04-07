@@ -1,13 +1,11 @@
-import { Search, Share2, History, Bookmark, Sun, Moon, Menu, X, MessageCircle, LogIn, LogOut } from 'lucide-react';
+import { Search, Share2, History, Bookmark, Sun, Moon, Menu, X, MessageCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import logo from '../assets/logo.webp';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
 import { mangaService } from '../services/api';
 import { getImageUrl } from '../utils/image';
 import { LoadingSpinner } from './LoadingSpinner';
-import { AuthModal } from './AuthModal';
 import type { Manga } from '../types';
 
 export const Navbar = () => {
@@ -16,13 +14,9 @@ export const Navbar = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
   const searchRef = useRef<HTMLDivElement>(null);
-  const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Close mobile menu when navigating
   useEffect(() => {
@@ -33,9 +27,6 @@ export const Navbar = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
       }
     };
 
@@ -84,15 +75,6 @@ export const Navbar = () => {
     setQuery(val);
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      setShowUserMenu(false);
-    } catch (err) {
-      console.error('Logout failed:', err);
-    }
-  };
-
   return (
     <header className="bg-white shadow-sm dark:bg-gray-900 dark:shadow-black/20 transition-colors relative z-50">
       <div className="container-custom py-4 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -105,29 +87,12 @@ export const Navbar = () => {
           </Link>
 
           {/* Mobile Menu Button */}
-          <div className="flex items-center gap-2 md:hidden">
-            {!user ? (
-              <button 
-                onClick={() => setIsAuthModalOpen(true)}
-                className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-              >
-                <LogIn className="h-6 w-6" />
-              </button>
-            ) : (
-              <button 
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 text-orange-600 bg-orange-50 dark:bg-orange-900/20 rounded-lg font-bold text-sm"
-              >
-                {user.username[0].toUpperCase()}
-              </button>
-            )}
-            <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-            >
-              {isMobileMenuOpen ? <X className="h-6 w-6 text-orange-600" /> : <Menu className="h-6 w-6" />}
-            </button>
-          </div>
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+          >
+            {isMobileMenuOpen ? <X className="h-6 w-6 text-orange-600" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
 
         <div className="flex-1 w-full max-w-xl md:mx-4 relative" ref={searchRef}>
@@ -241,71 +206,13 @@ export const Navbar = () => {
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
             </a>
-
-            {/* Auth Section */}
-            <div className="relative ml-2" ref={userMenuRef}>
-              {!user ? (
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition shadow-lg shadow-orange-600/20"
-                >
-                  <LogIn className="h-4 w-4" />
-                  Login
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="w-8 h-8 rounded-full bg-orange-600 text-white flex items-center justify-center font-bold shadow-lg hover:ring-2 hover:ring-orange-500 transition"
-                  >
-                    {user.username[0].toUpperCase()}
-                  </button>
-                  {showUserMenu && (
-                    <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-2xl py-2 animate-in slide-in-from-top-2 duration-200">
-                      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
-                        <p className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">{user.username}</p>
-                      </div>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Logout
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Auth Modal */}
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shadow-xl py-4 px-4 flex flex-col space-y-4 animate-in slide-in-from-top duration-200">
-          {user && (
-            <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-900/20">
-              <div className="w-10 h-10 rounded-full bg-orange-600 text-white flex items-center justify-center font-bold text-lg">
-                {user.username[0].toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-orange-600 dark:text-orange-400 font-bold">Logged in as</p>
-                <p className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">{user.username}</p>
-              </div>
-              <button 
-                onClick={handleLogout}
-                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
-            </div>
-          )}
-          
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center space-x-4">
               <button

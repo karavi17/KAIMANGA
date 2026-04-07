@@ -1,6 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Home } from './pages/Home';
 import { Details } from './pages/Details';
@@ -72,25 +70,21 @@ function App() {
   const isGithubPages = window.location.hostname.includes('github.io');
   
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Router basename={isGithubPages ? '/KAIMANGA' : ''}>
-          <ScrollToTop />
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/browse/:type" element={<Browse />} />
-              <Route path="/bookmarks" element={<Bookmarks />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/fanpage" element={<Fanpage />} />
-              <Route path="/manga/:id" element={<Details />} />
-              <Route path="/manga/:id/:chapterId" element={<Reader />} />
-            </Routes>
-          </Layout>
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+    <Router basename={isGithubPages ? '/KAIMANGA' : ''}>
+      <ScrollToTop />
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/browse/:type" element={<Browse />} />
+          <Route path="/bookmarks" element={<Bookmarks />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/fanpage" element={<Fanpage />} />
+          <Route path="/manga/:id" element={<Details />} />
+          <Route path="/manga/:id/:chapterId" element={<Reader />} />
+        </Routes>
+      </Layout>
+    </Router>
   );
 }
 
