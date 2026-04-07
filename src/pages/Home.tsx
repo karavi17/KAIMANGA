@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { mangaService } from '../services/api';
-import type { HomeData } from '../types';
+import type { HomeData, Manga } from '../types';
 import { MangaCard } from '../components/MangaCard';
 import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -12,10 +12,14 @@ const LOAD_MORE_STEP = 8;
 
 export const Home = () => {
   const [data, setData] = useState<HomeData | null>(null);
+  const [popularMangas, setPopularMangas] = useState<Manga[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visiblePopular, setVisiblePopular] = useState(INITIAL_GRID);
   const [showNotice, setShowNotice] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(true);
 
   useEffect(() => {
     // Show notice by default on desktop, hidden on mobile
@@ -26,6 +30,7 @@ export const Home = () => {
         setLoading(true);
         const homeData = await mangaService.getHome();
         setData(homeData);
+        setPopularMangas(homeData.popularManga.mangas);
       } catch (err) {
         setError('Failed to fetch manga data. Please make sure the API is running.');
         console.error(err);
@@ -37,8 +42,39 @@ export const Home = () => {
     fetchData();
   }, []);
 
-  const handleLoadMore = () => {
-    setVisiblePopular(prev => prev + LOAD_MORE_STEP);
+  const handleLoadMore = async () => {
+    // If we already have more items in the current list, just show them
+    if (visiblePopular + LOAD_MORE_STEP <= popularMangas.length) {
+      setVisiblePopular(prev => prev + LOAD_MORE_STEP);
+      return;
+    }
+
+    // If we've shown all items in current list, fetch next page
+    if (hasNextPage) {
+      try {
+        setLoadingMore(true);
+        const nextPage = page + 1;
+        const result = await mangaService.getPopular(nextPage);
+        
+        if (result.mangas.length > 0) {
+          // Filter out duplicates just in case
+          const newMangas = result.mangas.filter(
+            newManga => !popularMangas.some(m => m.id === newManga.id)
+          );
+          
+          setPopularMangas(prev => [...prev, ...newMangas]);
+          setVisiblePopular(prev => prev + LOAD_MORE_STEP);
+          setPage(nextPage);
+          setHasNextPage(result.hasNextPage);
+        } else {
+          setHasNextPage(false);
+        }
+      } catch (err) {
+        console.error('Failed to load more popular manga', err);
+      } finally {
+        setLoadingMore(false);
+      }
+    }
   };
 
   if (error) {
@@ -57,8 +93,7 @@ export const Home = () => {
     );
   }
 
-  const popularList = data?.popularManga.mangas ?? [];
-  const canShowMore = popularList.length > visiblePopular;
+  const canShowMore = hasNextPage || (popularMangas.length > visiblePopular);
 
   return (
     <div className="container-custom py-6">
@@ -102,7 +137,7 @@ export const Home = () => {
             ) : (
               <>
                 <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-gray-900/40">
-                  {popularList.slice(0, visiblePopular).map((manga) => (
+                  {popularMangas.slice(0, visiblePopular).map((manga) => (
                     <MangaCard key={manga.id} manga={manga} />
                   ))}
                 </div>
@@ -111,9 +146,17 @@ export const Home = () => {
                   <div className="px-4 pb-4 flex justify-center bg-gray-50 dark:bg-gray-900/40">
                     <button 
                       onClick={handleLoadMore}
-                      className="px-8 py-2 bg-orange-600 text-white rounded font-bold hover:bg-orange-700 transition shadow-lg active:scale-95"
+                      disabled={loadingMore}
+                      className="flex items-center px-8 py-2 bg-orange-600 text-white rounded font-bold hover:bg-orange-700 transition shadow-lg active:scale-95 disabled:opacity-50"
                     >
-                      Show more
+                      {loadingMore ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Loading...
+                        </>
+                      ) : (
+                        'Show more'
+                      )}
                     </button>
                   </div>
                 )}
