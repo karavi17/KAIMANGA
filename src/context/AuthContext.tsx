@@ -16,7 +16,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = import.meta.env.PROD ? '/api' : 'http://localhost:3000/api';
+const isProd = import.meta.env.PROD;
+const API_BASE_URL = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/manga\/?$/, '').replace(/\/$/, '') || 
+                    (isProd ? 'https://kaimanga-production.up.railway.app/api' : 'http://localhost:3000/api');
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -28,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
+      fetchBookmarksFromDB(savedToken);
     }
   }, []);
 
@@ -37,8 +40,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('auth_token', newToken);
     localStorage.setItem('auth_user', JSON.stringify(newUser));
     
-    // Sync local bookmarks to DB after login
-    syncBookmarksToDB(newToken);
+    // Sync and fetch bookmarks
+    syncAndFetchBookmarks(newToken);
   };
 
   const logout = () => {
@@ -48,19 +51,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('auth_user');
   };
 
-  const syncBookmarksToDB = async (authToken: string) => {
+  const fetchBookmarksFromDB = async (authToken: string) => {
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/sync/bookmarks`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      
+      const localBookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+      const mergedMap = new Map();
+      localBookmarks.forEach((b: any) => mergedMap.set(b.id, b));
+      data.forEach((b: any) => mergedMap.set(b.id, b));
+      
+      const merged = Array.from(mergedMap.values());
+      localStorage.setItem('bookmarks', JSON.stringify(merged));
+      window.dispatchEvent(new Event('bookmarksUpdated'));
+    } catch (err) {
+      console.error('Failed to fetch bookmarks from DB:', err);
+    }
+  };
+
+  const syncAndFetchBookmarks = async (authToken: string) => {
     const localBookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-    if (localBookmarks.length > 0) {
-      try {
+    try {
+      // 1. Push local bookmarks to DB
+      if (localBookmarks.length > 0) {
         await axios.post(`${API_BASE_URL}/sync/bookmarks`, 
           { bookmarks: localBookmarks },
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
-      } catch (err) {
-        console.error('Failed to sync bookmarks to DB:', err);
       }
-    }
-  };
+      
+      // 2. Fetch all bookmarks from DB (including merged ones)
+      await fetchBookmarksFromDB(authToken);
+    } catch (err) {
+       console.error('Failed to sync/fetch bookmarks:', err);
+     }
+   };
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
