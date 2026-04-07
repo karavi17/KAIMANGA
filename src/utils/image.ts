@@ -1,6 +1,6 @@
 const isProd = import.meta.env.PROD;
 const API_ORIGIN = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/api\/manga\/?$/, '').replace(/\/$/, '') || 
-                  (isProd ? '' : 'http://localhost:3000');
+                  (isProd ? 'https://kaimanga-production.up.railway.app' : 'http://localhost:3000');
 const PROXY_URL = `${API_ORIGIN}/api/proxy-image?url=`;
 
 export const getImageUrl = (url: string | undefined) => {

@@ -4,7 +4,7 @@ import type { HomeData, MangaDetails, SearchResult, ChapterImages } from '../typ
 /** Override with e.g. VITE_API_BASE=http://127.0.0.1:3000/api/manga in .env (must match your Node server). */
 const isProd = import.meta.env.PROD;
 const API_BASE_URL = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, '') || 
-                    (isProd ? '/api/manga' : 'http://localhost:3000/api/manga');
+                    (isProd ? 'https://kaimanga-production.up.railway.app/api/manga' : 'http://localhost:3000/api/manga');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
