@@ -181,17 +181,36 @@ export const Reader = () => {
       >
         <div className="flex flex-col items-center space-y-2">
           {data.images.map((url, index) => (
-            <img 
+            <div 
               key={index} 
-              src={getImageUrl(url)} 
-              alt={`Page ${index + 1}`} 
-              className="w-full h-auto object-contain shadow-2xl pointer-events-none"
-              loading="lazy"
-              onError={(e) => {
-                const img = e.currentTarget;
-                img.src = "https://placehold.co/800x1200?text=Failed+to+load+image";
-              }}
-            />
+              className="w-full bg-gray-900 animate-pulse rounded-lg overflow-hidden"
+              style={{ minHeight: '600px', aspectRatio: '2/3' }}
+            >
+              <img 
+                src={getImageUrl(url)} 
+                alt={`Page ${index + 1}`} 
+                className="w-full h-auto object-contain shadow-2xl pointer-events-none transition-opacity duration-500 opacity-0"
+                loading="lazy"
+                onLoad={(e) => {
+                  const target = e.currentTarget;
+                  target.classList.remove('opacity-0');
+                  const parent = target.parentElement;
+                  if (parent) {
+                    parent.classList.remove('animate-pulse', 'bg-gray-900');
+                    parent.style.minHeight = 'auto';
+                  }
+                }}
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  img.src = "https://placehold.co/800x1200?text=Failed+to+load+image";
+                  img.classList.remove('opacity-0');
+                  const parent = img.parentElement;
+                  if (parent) {
+                    parent.classList.remove('animate-pulse');
+                  }
+                }}
+              />
+            </div>
           ))}
         </div>
       </div>

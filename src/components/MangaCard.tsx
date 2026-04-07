@@ -12,16 +12,22 @@ export const MangaCard = ({ manga }: MangaCardProps) => {
     <div className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded overflow-hidden">
       <Link 
         to={`/manga/${manga.id}`} 
-        className="block aspect-[3/4] overflow-hidden"
+        className="block aspect-[3/4] overflow-hidden bg-gray-200 dark:bg-gray-700 relative"
       >
         <img 
           src={getImageUrl(manga.image)} 
           alt={manga.title} 
-          className="object-cover w-full h-full transition duration-500 group-hover:scale-110"
+          className="object-cover w-full h-full transition duration-500 group-hover:scale-110 opacity-0"
           loading="lazy"
+          onLoad={(e) => {
+            const target = e.currentTarget;
+            target.classList.remove('opacity-0');
+            target.parentElement?.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+          }}
           onError={(e) => {
             const img = e.currentTarget;
             img.src = "https://placehold.co/300x400?text=No+Cover";
+            img.classList.remove('opacity-0');
           }}
         />
         {manga.latestChapter && (
