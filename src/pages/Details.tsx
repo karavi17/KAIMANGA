@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { mangaService } from '../services/api';
 import type { MangaDetails } from '../types';
-import { Loader2, BookOpen, Clock, Tag, User, Star, Play, Zap, Share2 } from 'lucide-react';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { BookOpen, Clock, Tag, User, Star, Play, Zap, Share2 } from 'lucide-react';
 import { getImageUrl } from '../utils/image';
 import { BookmarkButton } from '../components/BookmarkButton';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -52,7 +53,7 @@ export const Details = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-10 w-10 text-indigo-500 animate-spin" />
+        <LoadingSpinner />
       </div>
     );
   }

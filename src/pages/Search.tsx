@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { mangaService } from '../services/api';
 import type { SearchResult, Manga } from '../types';
 import { MangaCard } from '../components/MangaCard';
-import { Loader2, Search as SearchIcon, Plus } from 'lucide-react';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { Search as SearchIcon, Plus } from 'lucide-react';
 
 export const Search = () => {
   const [searchParams] = useSearchParams();
@@ -64,7 +65,7 @@ export const Search = () => {
   if (loading && page === 1) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-10 w-10 text-indigo-500 animate-spin" />
+        <LoadingSpinner />
       </div>
     );
   }
@@ -101,20 +102,20 @@ export const Search = () => {
 
       {data?.hasNextPage && (
         <div className="flex justify-center pt-12 pb-8">
-          <button
+          <button 
             onClick={handleLoadMore}
             disabled={loadingMore}
-            className="flex items-center px-12 py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-full text-lg font-black uppercase tracking-widest transition-all shadow-xl hover:shadow-orange-500/40 disabled:opacity-50 active:scale-95"
+            className="flex items-center px-8 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold transition shadow-lg disabled:opacity-50"
           >
             {loadingMore ? (
               <>
-                <Loader2 className="h-6 w-6 mr-3 animate-spin" />
-                Showing More...
+                <div className="mr-3 h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Searching...
               </>
             ) : (
               <>
-                <Plus className="h-6 w-6 mr-3" />
-                Load More Manga
+                <Plus className="h-5 w-5 mr-2" />
+                Load More
               </>
             )}
           </button>

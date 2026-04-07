@@ -3,7 +3,8 @@ import { mangaService } from '../services/api';
 import type { HomeData } from '../types';
 import { MangaCard } from '../components/MangaCard';
 import { Sidebar } from '../components/Sidebar';
-import { Loader2, ChevronRight, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { ChevronRight, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const INITIAL_GRID = 8;
@@ -42,7 +43,7 @@ export const Home = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-10 w-10 text-orange-500 animate-spin" />
+        <LoadingSpinner />
       </div>
     );
   }

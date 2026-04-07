@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { mangaService } from '../services/api';
 import type { ChapterImages } from '../types';
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Settings, LayoutGrid } from 'lucide-react';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { ChevronLeft, ChevronRight, BookOpen, Settings, LayoutGrid } from 'lucide-react';
 import { getImageUrl } from '../utils/image';
 
 export const Reader = () => {
@@ -81,8 +82,8 @@ export const Reader = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
-        <Loader2 className="h-10 w-10 text-indigo-500 animate-spin" />
+      <div className="flex items-center justify-center min-h-screen bg-gray-950">
+        <LoadingSpinner />
       </div>
     );
   }

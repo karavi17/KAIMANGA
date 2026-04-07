@@ -4,7 +4,8 @@ import { mangaService } from '../services/api';
 import type { SearchResult, Manga } from '../types';
 import { MangaCard } from '../components/MangaCard';
 import { Sidebar } from '../components/Sidebar';
-import { Loader2, Plus } from 'lucide-react';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { Plus } from 'lucide-react';
 
 export const Browse = () => {
   const { type } = useParams<{ type: string }>();
@@ -80,7 +81,7 @@ export const Browse = () => {
   if (loading && page === 1) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-10 w-10 text-orange-500 animate-spin" />
+        <LoadingSpinner />
       </div>
     );
   }
@@ -196,8 +197,8 @@ export const Browse = () => {
                     >
                       {loadingMore ? (
                         <>
-                          <Loader2 className="h-6 w-6 mr-3 animate-spin" />
-                          Showing...
+                          <div className="mr-3 h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Loading...
                         </>
                       ) : (
                         <>

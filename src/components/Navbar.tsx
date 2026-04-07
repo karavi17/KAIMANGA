@@ -1,10 +1,11 @@
-import { Search, Share2, History, Bookmark, Sun, Moon, Loader2, Menu, X, MessageCircle } from 'lucide-react';
+import { Search, Share2, History, Bookmark, Sun, Moon, Menu, X, MessageCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import logo from '../assets/logo.webp';
 import { useTheme } from '../context/ThemeContext';
 import { mangaService } from '../services/api';
 import { getImageUrl } from '../utils/image';
+import { LoadingSpinner } from './LoadingSpinner';
 import type { Manga } from '../types';
 
 export const Navbar = () => {
@@ -113,9 +114,8 @@ export const Navbar = () => {
           {showSuggestions && (query.trim().length >= 2) && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl z-[100] overflow-hidden max-h-[70vh] flex flex-col">
               {loadingSuggestions ? (
-                <div className="p-4 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                  <Loader2 className="h-6 w-6 animate-spin mr-2 text-orange-500" />
-                  <span>Searching...</span>
+                <div className="p-4 flex items-center justify-center">
+                  <LoadingSpinner className="scale-75" message="Searching..." />
                 </div>
               ) : suggestions.length > 0 ? (
                 <>
