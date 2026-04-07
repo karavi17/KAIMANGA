@@ -8,6 +8,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 import mysql from 'mysql2/promise';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -20,51 +22,74 @@ const PORT = process.env.PORT || 3000;
 const router = express.Router();
 const JWT_SECRET = 'kai_manga_secret_key_2026';
 
-// MySQL Connection Pool
-const pool = mysql.createPool({
-  host: 'sql208.infinityfree.com',
-  user: 'if0_41593312',
-  password: 'eC2UtBeyJ5zdEwS',
-  database: 'if0_41593312_kai',
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+// Database selection and setup
+let db;
+const useSQLite = true; // Force SQLite for local dev to avoid InfinityFree connection issues
 
-// Initialize database tables
 async function initDb() {
   try {
-    const connection = await pool.getConnection();
-    console.log('Connected to MySQL database');
-    
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    if (useSQLite) {
+      db = await open({
+        filename: path.join(__dirname, 'database.sqlite'),
+        driver: sqlite3.Database
+      });
+      console.log('Connected to SQLite database');
+      
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT UNIQUE NOT NULL,
+          password TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
 
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS bookmarks (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        manga_id VARCHAR(255) NOT NULL,
-        title VARCHAR(255) NOT NULL,
-        image TEXT NOT NULL,
-        latest_chapter_name VARCHAR(255),
-        latest_chapter_id VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_bookmark (user_id, manga_id),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      )
-    `);
-    
-    connection.release();
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS bookmarks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          manga_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          image TEXT NOT NULL,
+          latest_chapter_name TEXT,
+          latest_chapter_id TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, manga_id),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+    } else {
+      const pool = mysql.createPool({
+        host: 'sql208.infinityfree.com',
+        user: 'if0_41593312',
+        password: 'eC2UtBeyJ5zdEwS',
+        database: 'if0_41593312_kai',
+        port: 3306,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0
+      });
+      // Mock db object to match sqlite interface
+      db = {
+        query: (sql, params) => pool.query(sql, params),
+        exec: (sql) => pool.query(sql),
+        get: async (sql, params) => {
+          const [rows] = await pool.query(sql, params);
+          return rows[0];
+        },
+        all: async (sql, params) => {
+          const [rows] = await pool.query(sql, params);
+          return rows;
+        },
+        run: async (sql, params) => {
+          const [result] = await pool.query(sql, params);
+          return { lastID: result.insertId, changes: result.affectedRows };
+        }
+      };
+      console.log('Connected to MySQL database');
+    }
   } catch (err) {
-    console.error('MySQL initialization error:', err.message);
+    console.error('Database initialization error:', err.message);
   }
 }
 
@@ -107,11 +132,15 @@ app.post('/api/auth/register', async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const [result] = await pool.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword]);
-    const token = jwt.sign({ id: result.insertId, username }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, user: { id: result.insertId, username } });
+    const result = await db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword]);
+    const userId = result.lastID;
+    const token = jwt.sign({ id: userId, username }, JWT_SECRET, { expiresIn: '7d' });
+    res.status(201).json({ token, user: { id: userId, username } });
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ message: 'Username already exists' });
+    if (err.code === 'SQLITE_CONSTRAINT' || err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+    console.error('Registration error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -119,16 +148,16 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
-    if (rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
+    const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
     
-    const user = rows[0];
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, username: user.username } });
   } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -136,7 +165,7 @@ app.post('/api/auth/login', async (req, res) => {
 // Bookmark Sync Routes
 app.get('/api/sync/bookmarks', authenticateToken, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM bookmarks WHERE user_id = ?', [req.user.id]);
+    const rows = await db.all('SELECT * FROM bookmarks WHERE user_id = ?', [req.user.id]);
     const bookmarks = rows.map(r => ({
       id: r.manga_id,
       title: r.title,
@@ -157,21 +186,34 @@ app.post('/api/sync/bookmarks', authenticateToken, async (req, res) => {
   if (!Array.isArray(bookmarks)) return res.status(400).json({ message: 'Invalid data' });
 
   try {
-    // Basic bulk insert/update
     for (const b of bookmarks) {
-      await pool.query(
-        `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
-         VALUES (?, ?, ?, ?, ?, ?) 
-         ON DUPLICATE KEY UPDATE 
-         title = VALUES(title), 
-         image = VALUES(image), 
-         latest_chapter_name = VALUES(latest_chapter_name), 
-         latest_chapter_id = VALUES(latest_chapter_id)`,
-        [req.user.id, b.id, b.title, b.image, b.latestChapter?.name, b.latestChapter?.id]
-      );
+      if (useSQLite) {
+        await db.run(
+          `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
+           VALUES (?, ?, ?, ?, ?, ?) 
+           ON CONFLICT(user_id, manga_id) DO UPDATE SET 
+           title = excluded.title, 
+           image = excluded.image, 
+           latest_chapter_name = excluded.latest_chapter_name, 
+           latest_chapter_id = excluded.latest_chapter_id`,
+          [req.user.id, b.id, b.title, b.image, b.latestChapter?.name, b.latestChapter?.id]
+        );
+      } else {
+        await db.run(
+          `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
+           VALUES (?, ?, ?, ?, ?, ?) 
+           ON DUPLICATE KEY UPDATE 
+           title = VALUES(title), 
+           image = VALUES(image), 
+           latest_chapter_name = VALUES(latest_chapter_name), 
+           latest_chapter_id = VALUES(latest_chapter_id)`,
+          [req.user.id, b.id, b.title, b.image, b.latestChapter?.name, b.latestChapter?.id]
+        );
+      }
     }
     res.json({ success: true });
   } catch (err) {
+    console.error('Sync bookmarks error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -179,16 +221,29 @@ app.post('/api/sync/bookmarks', authenticateToken, async (req, res) => {
 app.post('/api/sync/add-bookmark', authenticateToken, async (req, res) => {
   const { manga } = req.body;
   try {
-    await pool.query(
-      `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
-       VALUES (?, ?, ?, ?, ?, ?) 
-       ON DUPLICATE KEY UPDATE 
-       title = VALUES(title), 
-       image = VALUES(image), 
-       latest_chapter_name = VALUES(latest_chapter_name), 
-       latest_chapter_id = VALUES(latest_chapter_id)`,
-      [req.user.id, manga.id, manga.title, manga.image, manga.latestChapter?.name, manga.latestChapter?.id]
-    );
+    if (useSQLite) {
+      await db.run(
+        `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
+         VALUES (?, ?, ?, ?, ?, ?) 
+         ON CONFLICT(user_id, manga_id) DO UPDATE SET 
+         title = excluded.title, 
+         image = excluded.image, 
+         latest_chapter_name = excluded.latest_chapter_name, 
+         latest_chapter_id = excluded.latest_chapter_id`,
+        [req.user.id, manga.id, manga.title, manga.image, manga.latestChapter?.name, manga.latestChapter?.id]
+      );
+    } else {
+      await db.run(
+        `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
+         VALUES (?, ?, ?, ?, ?, ?) 
+         ON DUPLICATE KEY UPDATE 
+         title = VALUES(title), 
+         image = VALUES(image), 
+         latest_chapter_name = VALUES(latest_chapter_name), 
+         latest_chapter_id = VALUES(latest_chapter_id)`,
+        [req.user.id, manga.id, manga.title, manga.image, manga.latestChapter?.name, manga.latestChapter?.id]
+      );
+    }
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -198,12 +253,13 @@ app.post('/api/sync/add-bookmark', authenticateToken, async (req, res) => {
 app.post('/api/sync/remove-bookmark', authenticateToken, async (req, res) => {
   const { mangaId } = req.body;
   try {
-    await pool.query('DELETE FROM bookmarks WHERE user_id = ? AND manga_id = ?', [req.user.id, mangaId]);
+    await db.run('DELETE FROM bookmarks WHERE user_id = ? AND manga_id = ?', [req.user.id, mangaId]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));
