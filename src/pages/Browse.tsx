@@ -78,14 +78,6 @@ export const Browse = () => {
     }
   };
 
-  if (loading && page === 1) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   const alphabets = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
   return (
@@ -96,14 +88,14 @@ export const Browse = () => {
             <div className="section-title">
               Filters
             </div>
-            <div className="p-4 space-y-4 bg-gray-50 border-b border-gray-100">
+            <div className="p-4 space-y-4 bg-gray-50 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-800">
               {/* Category Filter */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-gray-500 uppercase min-w-[70px]">Category:</span>
+                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase min-w-[70px]">Category:</span>
                 <select 
                   value={category} 
                   onChange={(e) => setCategory(e.target.value)}
-                  className="text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  className="text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 >
                   <option value="all">All Genres</option>
                   {genres.map(g => (
@@ -114,14 +106,14 @@ export const Browse = () => {
 
               {/* Status Filter */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-gray-500 uppercase min-w-[70px]">Status:</span>
+                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase min-w-[70px]">Status:</span>
                 <div className="flex gap-2">
                   {['all', 'ongoing', 'completed'].map((s) => (
                     <button
                       key={s}
                       onClick={() => setState(s)}
                       className={`text-xs px-3 py-1 rounded capitalize transition ${
-                        state === s ? 'bg-orange-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-500'
+                        state === s ? 'bg-orange-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-orange-500'
                       }`}
                     >
                       {s}
@@ -132,12 +124,12 @@ export const Browse = () => {
 
               {/* Alphabet Filter */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-gray-500 uppercase min-w-[70px]">Alphabet:</span>
+                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase min-w-[70px]">Alphabet:</span>
                 <div className="flex flex-wrap gap-1">
                   <button
                     onClick={() => setAlpha('all')}
                     className={`text-[10px] w-6 h-6 flex items-center justify-center rounded border transition ${
-                      alpha === 'all' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-500'
+                      alpha === 'all' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-orange-500'
                     }`}
                   >
                     All
@@ -147,7 +139,7 @@ export const Browse = () => {
                       key={char}
                       onClick={() => setAlpha(char.toLowerCase())}
                       className={`text-[10px] w-6 h-6 flex items-center justify-center rounded border transition ${
-                        alpha === char.toLowerCase() ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-500'
+                        alpha === char.toLowerCase() ? 'bg-orange-500 text-white border-orange-500' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-orange-500'
                       }`}
                     >
                       {char}
@@ -156,7 +148,7 @@ export const Browse = () => {
                   <button
                     onClick={() => setAlpha('other')}
                     className={`text-[10px] px-2 h-6 flex items-center justify-center rounded border transition ${
-                      alpha === 'other' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-500'
+                      alpha === 'other' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-orange-500'
                     }`}
                   >
                     #
@@ -171,11 +163,15 @@ export const Browse = () => {
               {titleMap[type || ''] || 'Browse Manga'}
             </div>
             
-            {error ? (
+            {loading && page === 1 ? (
+              <div className="flex items-center justify-center py-20 bg-gray-50 dark:bg-gray-900/40">
+                <LoadingSpinner />
+              </div>
+            ) : error ? (
               <div className="p-8 text-center text-red-500">{error}</div>
             ) : (
               <>
-                <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-gray-900/40">
                   {mangas.map((manga, index) => (
                     <MangaCard key={`${manga.id}-${index}`} manga={manga} />
                   ))}
@@ -189,7 +185,7 @@ export const Browse = () => {
 
                 {/* Load More */}
                 {data?.hasNextPage && (
-                  <div className="p-8 border-t border-gray-100 flex justify-center bg-gray-50/50">
+                  <div className="p-8 border-t border-gray-100 dark:border-gray-800 flex justify-center bg-gray-50/50 dark:bg-gray-900/60">
                     <button 
                       onClick={handleLoadMore}
                       disabled={loadingMore}

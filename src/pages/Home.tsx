@@ -37,31 +37,28 @@ export const Home = () => {
     fetchData();
   }, []);
 
-  const popularList = data?.popularManga.mangas ?? [];
-  const canShowMore = visiblePopular < popularList.length;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <LoadingSpinner />
-      </div>
-    );
-  }
+  const handleLoadMore = () => {
+    setVisiblePopular(prev => prev + LOAD_MORE_STEP);
+  };
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <p className="text-red-500 dark:text-red-400 text-lg mb-4">{error}</p>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition"
-        >
-          Try Again
-        </button>
+      <div className="container-custom py-12 text-center">
+        <div className="white-box p-8 max-w-lg mx-auto border-2 border-red-500">
+          <p className="text-red-500 font-bold mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 bg-orange-600 text-white rounded font-bold hover:bg-orange-700 transition"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
+
+  const popularList = data?.popularManga.mangas ?? [];
+  const canShowMore = popularList.length > visiblePopular;
 
   return (
     <div className="container-custom py-6">
@@ -91,27 +88,36 @@ export const Home = () => {
           </div>
 
           <section className="white-box p-0 overflow-hidden">
-            <div className="bg-orange-600 text-white px-4 py-2 text-sm font-bold uppercase flex justify-between items-center rounded-r-lg">
-              <span>Popular Manga</span>
-              <Link to="/browse/hot" className="text-[10px] hover:underline flex items-center">
-                View All <ChevronRight className="h-3 w-3 ml-1" />
+            <div className="bg-orange-600 text-white px-4 py-3 flex items-center justify-between">
+              <h2 className="font-bold text-lg uppercase tracking-wider">Popular Manga</h2>
+              <Link to="/browse/hot" className="text-xs hover:underline flex items-center gap-1">
+                VIEW ALL <ChevronRight className="h-3 w-3" />
               </Link>
             </div>
-            <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-gray-900/40">
-              {popularList.slice(0, visiblePopular).map((manga) => (
-                <MangaCard key={manga.id} manga={manga} />
-              ))}
-            </div>
-            {canShowMore && (
-              <div className="px-4 pb-4 flex justify-center bg-gray-50 dark:bg-gray-900/40">
-                <button
-                  type="button"
-                  onClick={() => setVisiblePopular((n) => Math.min(n + LOAD_MORE_STEP, popularList.length))}
-                  className="px-8 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-lg shadow transition"
-                >
-                  Show more
-                </button>
+            
+            {loading ? (
+              <div className="flex items-center justify-center py-20 bg-gray-50 dark:bg-gray-900/40">
+                <LoadingSpinner />
               </div>
+            ) : (
+              <>
+                <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-gray-900/40">
+                  {popularList.slice(0, visiblePopular).map((manga) => (
+                    <MangaCard key={manga.id} manga={manga} />
+                  ))}
+                </div>
+
+                {canShowMore && (
+                  <div className="px-4 pb-4 flex justify-center bg-gray-50 dark:bg-gray-900/40">
+                    <button 
+                      onClick={handleLoadMore}
+                      className="px-8 py-2 bg-orange-600 text-white rounded font-bold hover:bg-orange-700 transition shadow-lg active:scale-95"
+                    >
+                      Show more
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>
