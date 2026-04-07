@@ -22,14 +22,15 @@ const PORT = process.env.PORT || 3000;
 const router = express.Router();
 const JWT_SECRET = 'kai_manga_secret_key_2026';
 
-// Global CORS - MOVE TO TOP
-app.use(cors({
-  origin: ['https://karavi17.github.io', 'http://localhost:5173', 'http://localhost:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+// Global CORS - Permissive for debugging
+app.use(cors());
 app.use(express.json());
+
+// Add Request Logging Middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 // Database selection and setup
 let db;
@@ -282,8 +283,6 @@ app.post('/api/sync/remove-bookmark', authenticateToken, async (req, res) => {
   }
 });
 
-
-app.use('/api/manga', router);
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -1144,8 +1143,10 @@ router.get('/read/:mangaId/:chapterId', async (req, res) => {
   }
 });
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
+// Mounting router AFTER all routes are defined
+app.use('/api/manga', router);
+
+// The "catchall" handler
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
