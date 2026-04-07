@@ -24,7 +24,8 @@ const JWT_SECRET = 'kai_manga_secret_key_2026';
 
 // Database selection and setup
 let db;
-const useSQLite = true; // Force SQLite for local dev to avoid InfinityFree connection issues
+const isProd = process.env.NODE_ENV === 'production';
+const useSQLite = !process.env.MYSQL_HOST; // Default to SQLite unless MySQL host is provided
 
 async function initDb() {
   try {
@@ -60,11 +61,11 @@ async function initDb() {
       `);
     } else {
       const pool = mysql.createPool({
-        host: 'sql208.infinityfree.com',
-        user: 'if0_41593312',
-        password: 'eC2UtBeyJ5zdEwS',
-        database: 'if0_41593312_kai',
-        port: 3306,
+        host: process.env.MYSQL_HOST || 'sql208.infinityfree.com',
+        user: process.env.MYSQL_USER || 'if0_41593312',
+        password: process.env.MYSQL_PASSWORD || 'eC2UtBeyJ5zdEwS',
+        database: process.env.MYSQL_DATABASE || 'if0_41593312_kai',
+        port: parseInt(process.env.MYSQL_PORT || '3306'),
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0

@@ -16,7 +16,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = import.meta.env.PROD ? '/api' : 'http://localhost:3000/api';
+const isProd = import.meta.env.PROD;
+const API_BASE_URL = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/manga\/?$/, '')?.replace(/\/$/, '') || 
+                    (isProd ? 'https://kaimanga-production.up.railway.app/api' : 'http://localhost:3000/api');
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
