@@ -1,15 +1,16 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
-import { Home } from './pages/Home';
-import { Details } from './pages/Details';
-import { Reader } from './pages/Reader';
-import { Search } from './pages/Search';
-import { Browse } from './pages/Browse';
-import { Bookmarks } from './pages/Bookmarks';
-import { History } from './pages/History';
-import { Fanpage } from './pages/FanPage';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { ChevronUp } from 'lucide-react';
+
+const Home = lazy(() => import('./pages/Home').then(m => ({ default: m.Home })));
+const Details = lazy(() => import('./pages/Details').then(m => ({ default: m.Details })));
+const Reader = lazy(() => import('./pages/Reader').then(m => ({ default: m.Reader })));
+const Search = lazy(() => import('./pages/Search').then(m => ({ default: m.Search })));
+const Browse = lazy(() => import('./pages/Browse').then(m => ({ default: m.Browse })));
+const Bookmarks = lazy(() => import('./pages/Bookmarks').then(m => ({ default: m.Bookmarks })));
+const History = lazy(() => import('./pages/History').then(m => ({ default: m.History })));
+const Fanpage = lazy(() => import('./pages/FanPage').then(m => ({ default: m.Fanpage })));
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -73,16 +74,18 @@ function App() {
     <Router basename={isGithubPages ? '/KAIMANGA' : ''}>
       <ScrollToTop />
       <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/browse/:type" element={<Browse />} />
-          <Route path="/bookmarks" element={<Bookmarks />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/fanpage" element={<Fanpage />} />
-          <Route path="/manga/:id" element={<Details />} />
-          <Route path="/manga/:id/:chapterId" element={<Reader />} />
-        </Routes>
+        <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]">Loading…</div>}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/browse/:type" element={<Browse />} />
+            <Route path="/bookmarks" element={<Bookmarks />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/fanpage" element={<Fanpage />} />
+            <Route path="/manga/:id" element={<Details />} />
+            <Route path="/manga/:id/:chapterId" element={<Reader />} />
+          </Routes>
+        </Suspense>
       </Layout>
     </Router>
   );

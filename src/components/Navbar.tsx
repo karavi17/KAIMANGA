@@ -1,13 +1,11 @@
-import { Search, Share2, History, Bookmark, Sun, Moon, Menu, X, MessageCircle, User, LogOut } from 'lucide-react';
+import { Search, Share2, History, Bookmark, Sun, Moon, Menu, X, MessageCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import logo from '../assets/logo.webp';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
 import { mangaService } from '../services/api';
 import { getImageUrl } from '../utils/image';
 import { LoadingSpinner } from './LoadingSpinner';
-import { AuthModal } from './AuthModal';
 import type { Manga } from '../types';
 
 export const Navbar = () => {
@@ -16,10 +14,8 @@ export const Navbar = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { user, logout, isAuthenticated } = useAuth();
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Close mobile menu when navigating
@@ -212,35 +208,9 @@ export const Navbar = () => {
             </a>
 
             <div className="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
-
-            {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-orange-600 truncate max-w-[100px] hidden lg:block">
-                  {user?.username}
-                </span>
-                <button
-                  onClick={logout}
-                  className="p-2 text-gray-500 hover:text-red-500 transition"
-                  title="Logout"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="p-2 text-gray-500 hover:text-orange-600 transition flex items-center gap-1"
-                title="Login / Register"
-              >
-                <User className="h-5 w-5" />
-                <span className="text-sm font-bold hidden lg:block">Login</span>
-              </button>
-            )}
           </div>
         </div>
       </div>
-
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
@@ -254,27 +224,6 @@ export const Navbar = () => {
               >
                 {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
-              
-              {isAuthenticated ? (
-                <button
-                  onClick={logout}
-                  className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 transition flex items-center gap-2"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span>Logout</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    setIsAuthModalOpen(true);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 transition flex items-center gap-2"
-                >
-                  <User className="h-5 w-5" />
-                  <span>Login</span>
-                </button>
-              )}
             </div>
             <div className="flex items-center space-x-4">
               <Link to="/bookmarks" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 font-medium">

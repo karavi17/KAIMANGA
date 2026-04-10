@@ -2,14 +2,22 @@ import { Link } from 'react-router-dom';
 import type { Manga } from '../types';
 import { getImageUrl } from '../utils/image';
 import { ChevronRight } from 'lucide-react';
+import { mangaService } from '../services/api';
 
 interface MangaCardProps {
   manga: Manga;
 }
 
 export const MangaCard = ({ manga }: MangaCardProps) => {
+  const prefetchDetails = () => {
+    mangaService.getMangaDetails(manga.id).catch(() => {});
+  };
+
   return (
-    <div className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded overflow-hidden">
+    <div 
+      className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded overflow-hidden"
+      onMouseEnter={prefetchDetails}
+    >
       <Link 
         to={`/manga/${manga.id}`} 
         className="block aspect-[3/4] overflow-hidden bg-gray-200 dark:bg-gray-700 relative"

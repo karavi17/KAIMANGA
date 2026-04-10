@@ -7,9 +7,9 @@ import NodeCache from 'node-cache';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
-import mysql from 'mysql2/promise';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import compression from 'compression';
+import http from 'http';
+import https from 'https';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,57 +18,6 @@ const require = createRequire(import.meta.url);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const router = express.Router();
-const JWT_SECRET = 'kai_manga_secret_key_2026';
-
-// MySQL Connection Pool
-const pool = mysql.createPool({
-  host: 'sql208.infinityfree.com',
-  user: 'if0_41593312',
-  password: 'eC2UtBeyJ5zdEwS',
-  database: 'if0_41593312_kai',
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
-
-// Initialize database tables
-async function initDb() {
-  try {
-    const connection = await pool.getConnection();
-    console.log('Connected to MySQL database');
-    
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS bookmarks (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        manga_id VARCHAR(255) NOT NULL,
-        title VARCHAR(255) NOT NULL,
-        image TEXT NOT NULL,
-        latest_chapter_name VARCHAR(255),
-        latest_chapter_id VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_bookmark (user_id, manga_id),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      )
-    `);
-    
-    connection.release();
-  } catch (err) {
-    console.error('MySQL initialization error:', err.message);
-  }
-}
-
-initDb();
 
 // Setup axios retry
 axiosRetry(axios, { 
@@ -79,158 +28,29 @@ axiosRetry(axios, {
   }
 });
 
-// Cache setup: 1 hour for data, 24 hours for images
-const dataCache = new NodeCache({ stdTTL: 3600 });
-const imageCache = new NodeCache({ stdTTL: 86400 });
+axios.defaults.httpAgent = new http.Agent({ keepAlive: true, maxSockets: 50 });
+axios.defaults.httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 50 });
 
+const dataCache = new NodeCache({ stdTTL: 7200 });
+const imageCache = new NodeCache({ stdTTL: 604800 });
+const pendingRequests = new Map();
+
+app.set('etag', 'strong');
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 
-// Auth Middlewares
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) return res.status(401).json({ message: 'Authentication required' });
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Invalid or expired token' });
-    req.user = user;
-    next();
-  });
-};
-
-// Auth Routes
-app.post('/api/auth/register', async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ message: 'Username and password required' });
-
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const [result] = await pool.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword]);
-    const token = jwt.sign({ id: result.insertId, username }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, user: { id: result.insertId, username } });
-  } catch (err) {
-    console.error('Register error:', err.message);
-    if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ message: 'Username already exists' });
-    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
-    }
-    res.status(500).json({ message: 'Server error: ' + err.message });
-  }
-});
-
-app.post('/api/auth/login', async (req, res) => {
-  const { username, password } = req.body;
-  try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
-    if (rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
-    
-    const user = rows[0];
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
-
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, username: user.username } });
-  } catch (err) {
-    console.error('Login error:', err.message);
-    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
-    }
-    res.status(500).json({ message: 'Server error: ' + err.message });
-  }
-});
-
-// Bookmark Sync Routes
-app.get('/api/sync/bookmarks', authenticateToken, async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT * FROM bookmarks WHERE user_id = ?', [req.user.id]);
-    const bookmarks = rows.map(r => ({
-      id: r.manga_id,
-      title: r.title,
-      image: r.image,
-      latestChapter: {
-        name: r.latest_chapter_name,
-        id: r.latest_chapter_id
-      }
-    }));
-    res.json(bookmarks);
-  } catch (err) {
-    console.error('Sync get error:', err.message);
-    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
-    }
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-app.post('/api/sync/bookmarks', authenticateToken, async (req, res) => {
-  const { bookmarks } = req.body;
-  if (!Array.isArray(bookmarks)) return res.status(400).json({ message: 'Invalid data' });
-
-  try {
-    // Basic bulk insert/update
-    for (const b of bookmarks) {
-      await pool.query(
-        `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
-         VALUES (?, ?, ?, ?, ?, ?) 
-         ON DUPLICATE KEY UPDATE 
-         title = VALUES(title), 
-         image = VALUES(image), 
-         latest_chapter_name = VALUES(latest_chapter_name), 
-         latest_chapter_id = VALUES(latest_chapter_id)`,
-        [req.user.id, b.id, b.title, b.image, b.latestChapter?.name, b.latestChapter?.id]
-      );
-    }
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Sync post error:', err.message);
-    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
-    }
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-app.post('/api/sync/add-bookmark', authenticateToken, async (req, res) => {
-  const { manga } = req.body;
-  try {
-    await pool.query(
-      `INSERT INTO bookmarks (user_id, manga_id, title, image, latest_chapter_name, latest_chapter_id) 
-       VALUES (?, ?, ?, ?, ?, ?) 
-       ON DUPLICATE KEY UPDATE 
-       title = VALUES(title), 
-       image = VALUES(image), 
-       latest_chapter_name = VALUES(latest_chapter_name), 
-       latest_chapter_id = VALUES(latest_chapter_id)`,
-      [req.user.id, manga.id, manga.title, manga.image, manga.latestChapter?.name, manga.latestChapter?.id]
-    );
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Add bookmark error:', err.message);
-    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
-    }
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-app.post('/api/sync/remove-bookmark', authenticateToken, async (req, res) => {
-  const { mangaId } = req.body;
-  try {
-    await pool.query('DELETE FROM bookmarks WHERE user_id = ? AND manga_id = ?', [req.user.id, mangaId]);
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Remove bookmark error:', err.message);
-    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-      return res.status(503).json({ message: 'Database connection failed. InfinityFree might be blocking external access from Railway.' });
-    }
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, 'dist'), {
+  etag: true,
+  maxAge: '1y',
+  immutable: true,
+  setHeaders: (res, p) => {
+    if (p.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
+}));
 
 app.use('/api/manga', router);
 
@@ -246,9 +66,18 @@ const HEADERS = {
 const getCachedOrFetch = async (key, fetchFn, ttl = 3600) => {
   const cached = dataCache.get(key);
   if (cached) return cached;
-  const data = await fetchFn();
-  dataCache.set(key, data, ttl);
-  return data;
+  if (pendingRequests.has(key)) return pendingRequests.get(key);
+  const p = (async () => {
+    try {
+      const data = await fetchFn();
+      dataCache.set(key, data, ttl);
+      return data;
+    } finally {
+      pendingRequests.delete(key);
+    }
+  })();
+  pendingRequests.set(key, p);
+  return p;
 };
 
 /** Manga slug from any /manga/{slug} or /manga/{slug}/chapter (first path segment only). */
@@ -267,7 +96,7 @@ app.get('/api/proxy-image', async (req, res) => {
   const cachedImage = imageCache.get(imageUrl);
   if (cachedImage) {
     res.setHeader('Content-Type', cachedImage.contentType);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=604800');
     return res.send(cachedImage.data);
   }
 
@@ -282,7 +111,7 @@ app.get('/api/proxy-image', async (req, res) => {
     imageCache.set(imageUrl, imageData);
     
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=604800');
     res.send(response.data);
   } catch (error) {
     res.status(500).send('Error');
@@ -322,7 +151,8 @@ router.get('/home', async (req, res) => {
         });
       });
       return { popularManga, latestUpdates };
-    });
+    }, 600); // 10 min
+    res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=3600');
     res.json(homeData);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -479,7 +309,8 @@ router.get('/browse/:type/:page', async (req, res) => {
         totalPages,
         totalMangas
       };
-    });
+    }, 300); // 5 min
+    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
     res.json(browseData);
   } catch (error) {
     console.error(`Browse error (${type}):`, error.message);
@@ -520,7 +351,8 @@ router.get('/genres', async (req, res) => {
       }
       
       return genreList.sort((a, b) => a.name.localeCompare(b.name));
-    }, 86400); // Cache for 24 hours
+    }, 86400);
+    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=86400');
     res.json(genres);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -640,6 +472,7 @@ router.get('/search/:query/:page', async (req, res) => {
       totalMangas = totalPages * 24;
     }
 
+    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
     res.json({
       mangas,
       currentPage: parseInt(page),
@@ -958,10 +791,11 @@ router.get('/details/:id', async (req, res) => {
       })();
 
       if (detailsData.chapters.length > 0) {
-        dataCache.set(cacheKey, detailsData);
+        dataCache.set(cacheKey, detailsData, 7200); // 2 hours
       }
     }
 
+    res.setHeader('Cache-Control', 'public, max-age=7200, stale-while-revalidate=86400');
     res.json(detailsData);
   } catch (error) {
     console.error(`Details error (${requestedId}):`, error.message);
@@ -1082,7 +916,8 @@ router.get('/read/:mangaId/:chapterId', async (req, res) => {
         nextChapter,
         allChapters
       };
-    });
+    }, 86400); // 24 hours
+    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
     res.json(readerData);
   } catch (error) {
     console.error(`Read error (${mangaId}/${chapterId}):`, error.message);

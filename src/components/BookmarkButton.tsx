@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
 
 interface BookmarkButtonProps {
   manga: {
@@ -15,47 +13,22 @@ interface BookmarkButtonProps {
   };
 }
 
-const isProd = import.meta.env.PROD;
-const API_BASE_URL = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/manga\/?$/, '').replace(/\/$/, '') || 
-                    (isProd ? 'https://kaimanga-production.up.railway.app/api' : 'http://localhost:3000/api');
-
 export const BookmarkButton: React.FC<BookmarkButtonProps> = ({ manga }) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const { isAuthenticated, token } = useAuth();
 
   useEffect(() => {
     const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
     setIsBookmarked(bookmarks.some((b: any) => b.id === manga.id));
   }, [manga.id]);
 
-  const toggleBookmark = async () => {
+  const toggleBookmark = () => {
     const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
     let newBookmarks;
     
     if (isBookmarked) {
       newBookmarks = bookmarks.filter((b: any) => b.id !== manga.id);
-      if (isAuthenticated) {
-        try {
-          await axios.post(`${API_BASE_URL}/sync/remove-bookmark`, 
-            { mangaId: manga.id },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-        } catch (err) {
-          console.error('Failed to remove bookmark from DB', err);
-        }
-      }
     } else {
       newBookmarks = [...bookmarks, manga];
-      if (isAuthenticated) {
-        try {
-          await axios.post(`${API_BASE_URL}/sync/add-bookmark`, 
-            { manga },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-        } catch (err) {
-          console.error('Failed to add bookmark to DB', err);
-        }
-      }
     }
     
     localStorage.setItem('bookmarks', JSON.stringify(newBookmarks));

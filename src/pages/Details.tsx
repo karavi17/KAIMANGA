@@ -23,6 +23,11 @@ export const Details = () => {
         setLoading(true);
         const detailsData = await mangaService.getMangaDetails(id);
         setData(detailsData);
+        
+        // Preload hero image
+        const img = new Image();
+        img.src = getImageUrl(detailsData.image);
+        
         if (detailsData.id && detailsData.id !== id) {
           navigate(`/manga/${encodeURIComponent(detailsData.id)}`, { replace: true });
         }
@@ -88,7 +93,13 @@ export const Details = () => {
         <div className="relative z-10 flex flex-col md:flex-row p-6 md:p-10 gap-8">
           <div className="w-full md:w-64 flex-shrink-0 space-y-4">
             <div className="shadow-2xl rounded-xl overflow-hidden border border-gray-300 dark:border-gray-800">
-              <img src={getImageUrl(data.image)} alt={data.title} className="w-full h-auto" />
+              <img 
+                src={getImageUrl(data.image)} 
+                alt={data.title} 
+                className="w-full h-auto" 
+                fetchPriority="high"
+                loading="eager"
+              />
             </div>
             <BookmarkButton manga={{ id: mangaSlug, title: data.title, image: data.image }} />
             <button 

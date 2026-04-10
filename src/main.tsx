@@ -3,14 +3,17 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { ThemeProvider } from './context/ThemeContext'
-import { AuthProvider } from './context/AuthContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </StrictMode>,
 )
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
