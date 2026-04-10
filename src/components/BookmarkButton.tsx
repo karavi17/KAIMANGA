@@ -18,8 +18,19 @@ export const BookmarkButton: React.FC<BookmarkButtonProps> = ({ manga }) => {
 
   useEffect(() => {
     const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-    setIsBookmarked(bookmarks.some((b: any) => b.id === manga.id));
-  }, [manga.id]);
+    const index = bookmarks.findIndex((b: any) => b.id === manga.id);
+    if (index !== -1) {
+      setIsBookmarked(true);
+      // Update saved data with latest info if available
+      const currentBookmark = bookmarks[index];
+      if (JSON.stringify(currentBookmark) !== JSON.stringify(manga)) {
+        bookmarks[index] = { ...currentBookmark, ...manga };
+        localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+      }
+    } else {
+      setIsBookmarked(false);
+    }
+  }, [manga.id, manga]);
 
   const toggleBookmark = () => {
     const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');

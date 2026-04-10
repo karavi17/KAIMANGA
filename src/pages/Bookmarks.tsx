@@ -224,14 +224,16 @@ export const Bookmarks = () => {
                         )}
                       </div>
                       
-                      {manga.latestChapter && (
-                        <div className="flex items-center gap-2 text-sm md:text-base text-gray-800 dark:text-gray-200">
-                          <span className="font-semibold">Last Chapter :</span>
+                      <div className="flex items-center gap-2 text-sm md:text-base text-gray-800 dark:text-gray-200">
+                        <span className="font-semibold">Current :</span>
+                        {manga.latestChapter ? (
                           <Link to={`/manga/${manga.id}/${manga.latestChapter.id}`} className="font-bold text-[#00a3c4] hover:underline">
                             {manga.latestChapter.name}
                           </Link>
-                        </div>
-                      )}
+                        ) : (
+                          <span className="text-gray-400 italic">No info</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
