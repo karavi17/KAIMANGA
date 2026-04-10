@@ -132,7 +132,14 @@ export const Details = () => {
                 loading="eager"
               />
             </div>
-            <BookmarkButton manga={{ id: mangaSlug, title: data.title, image: data.image }} />
+            <BookmarkButton 
+              manga={{ 
+                id: mangaSlug, 
+                title: data.title, 
+                image: data.image,
+                latestChapter: lastChapter ? { id: lastChapter.id, name: lastChapter.name } : undefined
+              }} 
+            />
             <button 
               type="button"
               onClick={handleShare}
