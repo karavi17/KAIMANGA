@@ -139,9 +139,9 @@ function Flappy({ gap = 120 }: { gap?: number }) {
   const [hole, setHole] = useState(160);
   const [alive, setAlive] = useState(true);
   const [score, setScore] = useState(0);
-  const gravity = 800;
+  const gravity = 750;
   
-  const flap = () => alive && setVy(-280);
+  const flap = () => alive && setVy(-320);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.code === 'Space' || e.code === 'ArrowUp') flap(); };
@@ -154,12 +154,12 @@ function Flappy({ gap = 120 }: { gap?: number }) {
     setVy((v) => v + gravity * dt);
     setY((v) => {
       let ny = v + vy * dt;
-      if (ny < 0 || ny > 320) setAlive(false);
+      if (ny < -20 || ny > 340) setAlive(false);
       return ny;
     });
     setX((v) => {
-      const nx = v - 220 * dt;
-      if (nx < -60) {
+      const nx = v - 240 * dt;
+      if (nx < -80) {
         setHole(60 + Math.random() * 200);
         setScore(s => s + 1);
         return 640;
@@ -167,8 +167,8 @@ function Flappy({ gap = 120 }: { gap?: number }) {
       return nx;
     });
     const px = 100, py = y;
-    const collX = x < px + 30 && x + 60 > px;
-    const collY = py < hole - gap / 2 || py + 20 > hole + gap / 2;
+    const collX = x < px + 35 && x + 60 > px;
+    const collY = py < hole - gap / 2 || py + 25 > hole + gap / 2;
     if (collX && collY) setAlive(false);
   }, true);
 
@@ -176,12 +176,12 @@ function Flappy({ gap = 120 }: { gap?: number }) {
     <Frame title="Sky Bird" score={score}>
       <div onClick={flap} className="relative w-full h-full bg-gradient-to-b from-sky-900 to-indigo-950 cursor-pointer overflow-hidden">
         <div className="absolute left-[96px] top-0 transition-transform" style={{ transform: `translateY(${y}px)` }}>
-          <div className="w-10 h-10 bg-yellow-400 rounded-full shadow-[0_0_20px_rgba(250,204,21,0.5)] border-2 border-yellow-300 flex items-center justify-center text-xl">
+          <div className="w-12 h-12 bg-yellow-400 rounded-full shadow-[0_0_20px_rgba(250,204,21,0.5)] border-2 border-yellow-300 flex items-center justify-center text-2xl">
             {alive ? '🐤' : '💀'}
           </div>
         </div>
 
-        <div className="absolute top-0 w-16 h-full flex flex-col justify-between" style={{ transform: `translateX(${x}px)` }}>
+        <div className="absolute top-0 w-20 h-full flex flex-col justify-between" style={{ transform: `translateX(${x}px)` }}>
           <div className="w-full bg-emerald-600 rounded-b-2xl border-x-4 border-b-4 border-emerald-500 shadow-lg" style={{ height: `${hole - gap / 2}px` }} />
           <div className="w-full bg-emerald-600 rounded-t-2xl border-x-4 border-t-4 border-emerald-500 shadow-lg" style={{ height: `${320 - (hole + gap / 2)}px` }} />
         </div>
@@ -486,7 +486,7 @@ function TicTac() {
 }
 
 function Dodge({ speed = 200 }: { speed?: number }) {
-  const [px, setPx] = useState(140);
+  const [px, setPx] = useState(280);
   const [obs, setObs] = useState<{ x: number; y: number; char: string }[]>([]);
   const [alive, setAlive] = useState(true);
   const [score, setScore] = useState(0);
@@ -494,8 +494,8 @@ function Dodge({ speed = 200 }: { speed?: number }) {
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft' || e.key === 'a') setPx((v) => Math.max(0, v - 30));
-      if (e.key === 'ArrowRight' || e.key === 'd') setPx((v) => Math.min(280, v + 30));
+      if (e.key === 'ArrowLeft' || e.key === 'a') setPx((v) => Math.max(20, v - 40));
+      if (e.key === 'ArrowRight' || e.key === 'd') setPx((v) => Math.min(560, v + 40));
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
@@ -504,10 +504,10 @@ function Dodge({ speed = 200 }: { speed?: number }) {
   useRafLoop((dt) => {
     if (!alive) return;
     setObs((o) => {
-      const no = o.map((e) => ({ ...e, y: e.y + speed * dt })).filter((e) => e.y < 320);
-      if (Math.random() < 0.05) no.push({ x: Math.random() * 280, y: -20, char: chars[Math.floor(Math.random() * chars.length)] });
+      const no = o.map((e) => ({ ...e, y: e.y + speed * dt })).filter((e) => e.y < 340);
+      if (Math.random() < 0.06) no.push({ x: 20 + Math.random() * 540, y: -40, char: chars[Math.floor(Math.random() * chars.length)] });
       for (const e of no) {
-        if (Math.abs(e.x - px) < 25 && Math.abs(e.y - 260) < 25) {
+        if (Math.abs(e.x - px) < 35 && Math.abs(e.y - 260) < 35) {
           setAlive(false);
           break;
         }
@@ -522,7 +522,7 @@ function Dodge({ speed = 200 }: { speed?: number }) {
       <div className="relative w-full h-full bg-slate-950 overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20" />
         <div 
-          className="absolute w-12 h-12 flex items-center justify-center text-3xl transition-all duration-100" 
+          className="absolute w-14 h-14 flex items-center justify-center text-4xl transition-all duration-75" 
           style={{ transform: `translate(${px}px, 260px)` }}
         >
           🛸
@@ -530,7 +530,7 @@ function Dodge({ speed = 200 }: { speed?: number }) {
         {obs.map((e, i) => (
           <div 
             key={i} 
-            className="absolute w-8 h-8 flex items-center justify-center text-2xl" 
+            className="absolute w-10 h-10 flex items-center justify-center text-3xl" 
             style={{ transform: `translate(${e.x}px, ${e.y}px)` }}
           >
             {e.char}
@@ -540,7 +540,7 @@ function Dodge({ speed = 200 }: { speed?: number }) {
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center">
             <h4 className="text-4xl font-black text-red-500 mb-4 tracking-tighter uppercase italic">Destroyed</h4>
             <div className="text-white text-xl font-bold mb-6">Score: {Math.floor(score/10)}</div>
-            <button onClick={() => { setAlive(true); setObs([]); setScore(0); }} className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition">Re-entry</button>
+            <button onClick={() => { setAlive(true); setObs([]); setScore(0); setPx(280); }} className="px-6 py-2 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition">Re-entry</button>
           </div>
         )}
       </div>
@@ -644,8 +644,17 @@ export function FunGames({ onRetry }: FunGamesProps) {
   const [i] = useState(() => Math.floor(Math.random() * games.length));
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Prevent body scroll when game is active
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-4 bg-black/95 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-500 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-4 bg-black/95 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-600/20 rounded-full blur-[120px] animate-pulse" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse delay-700" />
