@@ -57,6 +57,24 @@ export const Reader = () => {
         // Keep only last 50 items
         localStorage.setItem('history', JSON.stringify(newHistory.slice(0, 50)));
 
+        // Update manga-history for recommendations
+        const mHistory = JSON.parse(localStorage.getItem('manga-history') || '[]');
+        const existing = mHistory.find((m: any) => m.id === id);
+        if (!existing) {
+          // If not in browsing history, try to get details to know genres
+          mangaService.getMangaDetails(id).then(details => {
+            const newItem = {
+              id: details.id,
+              title: details.title,
+              image: details.image,
+              genres: details.genres,
+              timestamp: Date.now()
+            };
+            const newMHistory = [newItem, ...mHistory].slice(0, 50);
+            localStorage.setItem('manga-history', JSON.stringify(newMHistory));
+          }).catch(console.error);
+        }
+
       } catch (err) {
         setError('Failed to fetch chapter images.');
         console.error(err);

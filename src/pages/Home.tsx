@@ -4,7 +4,7 @@ import type { HomeData, Manga } from '../types';
 import { MangaCard } from '../components/MangaCard';
 import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { ChevronRight, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronRight, BookOpen, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const INITIAL_GRID = 8;
@@ -13,7 +13,9 @@ const LOAD_MORE_STEP = 8;
 export const Home = () => {
   const [data, setData] = useState<HomeData | null>(null);
   const [popularMangas, setPopularMangas] = useState<Manga[]>([]);
+  const [recommendedMangas, setRecommendedMangas] = useState<Manga[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingRecommended, setLoadingRecommended] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visiblePopular, setVisiblePopular] = useState(INITIAL_GRID);
@@ -31,11 +33,17 @@ export const Home = () => {
         const homeData = await mangaService.getHome();
         setData(homeData);
         setPopularMangas(homeData.popularManga.mangas);
+        
+        // Fetch recommendations
+        setLoadingRecommended(true);
+        const recommendations = await mangaService.getRecommendations();
+        setRecommendedMangas(recommendations);
       } catch (err) {
         setError('Failed to fetch manga data. Please make sure the API is running.');
         console.error(err);
       } finally {
         setLoading(false);
+        setLoadingRecommended(false);
       }
     };
 
@@ -161,6 +169,32 @@ export const Home = () => {
                   </div>
                 )}
               </>
+            )}
+          </section>
+
+          {/* Recommended for You Section */}
+          <section className="white-box p-0 overflow-hidden">
+            <div className="bg-indigo-600 text-white px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                <h2 className="font-bold text-lg uppercase tracking-wider">Recommended for You</h2>
+              </div>
+            </div>
+            
+            {loadingRecommended ? (
+              <div className="flex items-center justify-center py-20 bg-gray-50 dark:bg-gray-900/40">
+                <LoadingSpinner />
+              </div>
+            ) : recommendedMangas.length > 0 ? (
+              <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-gray-900/40">
+                {recommendedMangas.map((manga) => (
+                  <MangaCard key={`rec-${manga.id}`} manga={manga} />
+                ))}
+              </div>
+            ) : (
+              <div className="p-10 text-center text-gray-500 bg-gray-50 dark:bg-gray-900/40 italic">
+                Start reading to get personalized recommendations!
+              </div>
             )}
           </section>
         </div>

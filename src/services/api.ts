@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { HomeData, MangaDetails, SearchResult, ChapterImages } from '../types';
+import type { HomeData, MangaDetails, SearchResult, ChapterImages, Manga } from '../types';
 
 /** Override with e.g. VITE_API_BASE=http://127.0.0.1:3000/api/manga in .env (must match your Node server). */
 const isProd = import.meta.env.PROD;
@@ -79,5 +79,60 @@ export const mangaService = {
 
   getPopular: async (page: number = 1, category?: string): Promise<SearchResult> => {
     return mangaService.getBrowse('hot', page, { category });
+  },
+
+  getRecommendations: async (): Promise<Manga[]> => {
+    try {
+      // 1. Get user's recent history/bookmarks to find favorite genres
+      const mHistory = JSON.parse(localStorage.getItem('manga-history') || '[]');
+      const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+      
+      // Map history and bookmarks together to find interests
+      const allInterests = [...mHistory, ...bookmarks];
+      if (allInterests.length === 0) {
+        // Fallback: get top popular manga
+        const popular = await mangaService.getPopular(1);
+        return popular.mangas.slice(0, 10);
+      }
+
+      // 2. Extract genres from history/bookmarks
+      const genreCounts: Record<string, number> = {};
+      allInterests.forEach(m => {
+        if (m.genres) {
+          m.genres.forEach((g: string) => {
+            genreCounts[g] = (genreCounts[g] || 0) + 1;
+          });
+        }
+      });
+
+      // 3. Pick top 2 favorite genres
+      const favoriteGenres = Object.entries(genreCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2)
+        .map(entry => entry[0]);
+
+      if (favoriteGenres.length === 0) {
+        const popular = await mangaService.getPopular(1);
+        return popular.mangas.slice(0, 10);
+      }
+
+      // 4. Fetch manga from these genres
+      const results = await Promise.all(
+        favoriteGenres.map(genreId => 
+          mangaService.getBrowse('hot', 1, { category: genreId })
+        )
+      );
+
+      // 5. Merge, deduplicate, and filter out already seen
+      const recommended = results.flatMap(r => r.mangas);
+      const uniqueRecommended = Array.from(new Map(recommended.map(m => [m.id, m])).values());
+      
+      return uniqueRecommended
+        .filter(m => !allInterests.some(i => i.id === m.id))
+        .slice(0, 12);
+    } catch (err) {
+      console.error('Failed to get recommendations', err);
+      return [];
+    }
   },
 };

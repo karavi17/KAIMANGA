@@ -24,6 +24,19 @@ export const Details = () => {
         const detailsData = await mangaService.getMangaDetails(id);
         setData(detailsData);
         
+        // Add to history for recommendations
+        const history = JSON.parse(localStorage.getItem('manga-history') || '[]');
+        const newItem = {
+          id: detailsData.id,
+          title: detailsData.title,
+          image: detailsData.image,
+          genres: detailsData.genres,
+          timestamp: Date.now()
+        };
+        const filteredHistory = history.filter((m: any) => m.id !== detailsData.id);
+        const newHistory = [newItem, ...filteredHistory].slice(0, 50);
+        localStorage.setItem('manga-history', JSON.stringify(newHistory));
+        
         // Preload hero image
         const img = new Image();
         img.src = getImageUrl(detailsData.image);
