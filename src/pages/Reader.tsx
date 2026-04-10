@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { mangaService } from '../services/api';
 import type { ChapterImages } from '../types';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { FunGames } from '../components/FunGames';
 import { ChevronLeft, ChevronRight, BookOpen, Settings, LayoutGrid } from 'lucide-react';
 import { getImageUrl } from '../utils/image';
 
@@ -34,8 +35,7 @@ export const Reader = () => {
 
   const toggleControls = () => setShowControls(!showControls);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = async () => {
       if (!id || !chapterId) return;
       try {
         setLoading(true);
@@ -64,9 +64,7 @@ export const Reader = () => {
         setLoading(false);
       }
     };
-
-    fetchData();
-  }, [id, chapterId]);
+  useEffect(() => { fetchData(); }, [id, chapterId]);
 
   const handlePrev = () => {
     if (data?.prevChapter) {
@@ -90,9 +88,11 @@ export const Reader = () => {
 
   if (error || !data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-red-400">
-        <p className="text-lg mb-4">{error || 'Chapter not found.'}</p>
-        <Link to={`/manga/${id}`} className="text-indigo-500 hover:underline">Back to Manga</Link>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black">
+        <FunGames onRetry={fetchData} />
+        <div className="mt-4">
+          <Link to={`/manga/${id}`} className="text-indigo-400 hover:underline text-sm">Back to Manga</Link>
+        </div>
       </div>
     );
   }
