@@ -5,7 +5,7 @@ import type { SearchResult, Manga } from '../types';
 import { MangaCard } from '../components/MangaCard';
 import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 
 export const Browse = () => {
   const { type } = useParams<{ type: string }>();
@@ -17,6 +17,7 @@ export const Browse = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Filter states
   const [category, setCategory] = useState('all');
@@ -84,78 +85,79 @@ export const Browse = () => {
     <div className="container-custom py-6">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8">
-          <section className="white-box p-0 overflow-hidden mb-6">
-            <div className="section-title">
-              Filters
-            </div>
-            <div className="p-4 space-y-4 bg-gray-50 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-800">
-              {/* Category Filter */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase min-w-[70px]">Category:</span>
-                <select 
-                  value={category} 
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                >
-                  <option value="all">All Genres</option>
-                  {genres.map(g => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
-              </div>
+          <section className="white-box p-0 overflow-hidden mb-6 border-none shadow-none">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest transition-all shadow-xl hover:shadow-orange-500/40 active:scale-95 group"
+            >
+              <Filter className={`h-5 w-5 transition-transform duration-300 ${showFilters ? 'rotate-180 scale-110' : ''}`} />
+              <span>Filters</span>
+              {showFilters ? <ChevronUp className="h-5 w-5 ml-1" /> : <ChevronDown className="h-5 w-5 ml-1" />}
+            </button>
 
-              {/* Status Filter */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase min-w-[70px]">Status:</span>
-                <div className="flex gap-2">
-                  {['all', 'ongoing', 'completed'].map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setState(s)}
-                      className={`text-xs px-3 py-1 rounded capitalize transition ${
-                        state === s ? 'bg-orange-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-orange-500'
-                      }`}
+            {showFilters && (
+              <div className="mt-4 p-6 space-y-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  {/* Category Filter */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block">Category</label>
+                    <select 
+                      value={category} 
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full text-sm border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/50 appearance-none transition-all cursor-pointer hover:border-orange-500"
                     >
-                      {s}
-                    </button>
-                  ))}
+                      <option value="all">All Genres</option>
+                      {genres.map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block">Status</label>
+                    <select 
+                      value={state} 
+                      onChange={(e) => setState(e.target.value)}
+                      className="w-full text-sm border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/50 appearance-none transition-all cursor-pointer hover:border-orange-500"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="ongoing">Ongoing</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+
+                  {/* Alphabet Filter */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block">Alphabet</label>
+                    <select 
+                      value={alpha} 
+                      onChange={(e) => setAlpha(e.target.value)}
+                      className="w-full text-sm border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/50 appearance-none transition-all cursor-pointer hover:border-orange-500"
+                    >
+                      <option value="all">All Characters</option>
+                      {alphabets.map((char) => (
+                        <option key={char} value={char.toLowerCase()}>{char}</option>
+                      ))}
+                      <option value="other"># (Others)</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-800">
+                  <button 
+                    onClick={() => {
+                      setCategory('all');
+                      setState('all');
+                      setAlpha('all');
+                    }}
+                    className="text-[10px] font-black text-gray-400 hover:text-orange-500 uppercase tracking-widest transition-colors"
+                  >
+                    Reset All Filters
+                  </button>
                 </div>
               </div>
-
-              {/* Alphabet Filter */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase min-w-[70px]">Alphabet:</span>
-                <div className="flex flex-wrap gap-1">
-                  <button
-                    onClick={() => setAlpha('all')}
-                    className={`text-[10px] w-6 h-6 flex items-center justify-center rounded border transition ${
-                      alpha === 'all' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-orange-500'
-                    }`}
-                  >
-                    All
-                  </button>
-                  {alphabets.map((char) => (
-                    <button
-                      key={char}
-                      onClick={() => setAlpha(char.toLowerCase())}
-                      className={`text-[10px] w-6 h-6 flex items-center justify-center rounded border transition ${
-                        alpha === char.toLowerCase() ? 'bg-orange-500 text-white border-orange-500' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-orange-500'
-                      }`}
-                    >
-                      {char}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setAlpha('other')}
-                    className={`text-[10px] px-2 h-6 flex items-center justify-center rounded border transition ${
-                      alpha === 'other' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-orange-500'
-                    }`}
-                  >
-                    #
-                  </button>
-                </div>
-              </div>
-            </div>
+            )}
           </section>
 
           <section className="white-box p-0 overflow-hidden">
