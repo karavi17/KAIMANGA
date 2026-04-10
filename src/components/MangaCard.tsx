@@ -40,7 +40,9 @@ export const MangaCard = ({ manga }: MangaCardProps) => {
         />
         {manga.latestChapter && (
           <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-1 text-[10px] text-center backdrop-blur-sm group-hover:bg-orange-600/80 transition">
-            {manga.latestChapter.name}
+            {manga.latestChapter.name.toLowerCase().startsWith(manga.title.toLowerCase()) 
+              ? manga.latestChapter.name.slice(manga.title.length).trim() 
+              : manga.latestChapter.name}
           </div>
         )}
       </Link>
