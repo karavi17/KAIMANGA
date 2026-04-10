@@ -28,10 +28,13 @@ const MESSAGES = [
   "Ink is drying, please wait..."
 ];
 
-// Define animation types
 type AnimationType = 
   | 'spinner' | 'dots' | 'bars' | 'bounce' | 'pulse' 
-  | 'circle-rotate' | 'dot-wave' | 'scaling-dots' | 'flipping-square' | 'ring-expand';
+  | 'circle-rotate' | 'dot-wave' | 'scaling-dots' | 'flipping-square' | 'ring-expand'
+  | 'shuriken' | 'page' | 'book' | 'koi' | 'cloud' | 'comet' | 'lantern'
+  | 'yinyang' | 'stars' | 'wave' | 'spiral' | 'ink' | 'panels' | 'magnify'
+  | 'glasses' | 'orbit' | 'loaderbar' | 'hex' | 'cube' | 'ringpulse' | 'heartbeat'
+  | 'dotsnake' | 'radar';
 
 interface LoadingSpinnerProps {
   fullScreen?: boolean;
@@ -48,10 +51,13 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const [loadingMessage, setLoadingMessage] = useState("");
 
   useEffect(() => {
-    // Pick random animation and message on mount
     const animations: AnimationType[] = [
-      'spinner', 'dots', 'bars', 'bounce', 'pulse', 
-      'circle-rotate', 'dot-wave', 'scaling-dots', 'flipping-square', 'ring-expand'
+      'spinner','dots','bars','bounce','pulse',
+      'circle-rotate','dot-wave','scaling-dots','flipping-square','ring-expand',
+      'shuriken','page','book','koi','cloud','comet','lantern',
+      'yinyang','stars','wave','spiral','ink','panels','magnify',
+      'glasses','orbit','loaderbar','hex','cube','ringpulse','heartbeat',
+      'dotsnake','radar'
     ];
     setAnimation(animations[Math.floor(Math.random() * animations.length)]);
     setLoadingMessage(customMessage || MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
@@ -120,6 +126,82 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         return (
           <div className="relative w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
         );
+      case 'shuriken':
+        return <div className="anim-wrap"><div className="anim-shuriken" /></div>;
+      case 'page':
+        return <div className="anim-wrap"><div className="anim-page"><div className="p" /></div></div>;
+      case 'book':
+        return <div className="anim-wrap"><div className="anim-book" /></div>;
+      case 'koi':
+        return (
+          <div className="anim-wrap">
+            <div className="anim-koi">
+              <div className="d" /><div className="d" /><div className="d" /><div className="d" /><div className="d" />
+            </div>
+          </div>
+        );
+      case 'cloud':
+        return (
+          <div className="anim-wrap">
+            <div className="anim-cloud"><div className="c" /><div className="c" /><div className="c" /></div>
+          </div>
+        );
+      case 'comet':
+        return <div className="anim-wrap"><div className="anim-comet" /></div>;
+      case 'lantern':
+        return <div className="anim-wrap"><div className="anim-lantern" /></div>;
+      case 'yinyang':
+        return <div className="anim-wrap"><div className="anim-yinyang" /></div>;
+      case 'stars':
+        return (
+          <div className="anim-wrap">
+            <div className="anim-stars"><div className="s" /><div className="s" /><div className="s" /><div className="s" /><div className="s" /></div>
+          </div>
+        );
+      case 'wave':
+        return (
+          <div className="anim-wrap">
+            <div className="anim-wave"><div className="b" /><div className="b" /><div className="b" /><div className="b" /><div className="b" /></div>
+          </div>
+        );
+      case 'spiral':
+        return <div className="anim-wrap"><div className="anim-spiral" /></div>;
+      case 'ink':
+        return <div className="anim-wrap"><div className="anim-ink" /></div>;
+      case 'panels':
+        return (
+          <div className="anim-wrap">
+            <div className="anim-panels"><div className="p" /><div className="p" /><div className="p" /></div>
+          </div>
+        );
+      case 'magnify':
+        return <div className="anim-wrap"><div className="anim-magnify" /></div>;
+      case 'glasses':
+        return (
+          <div className="anim-wrap">
+            <div className="anim-glasses"><div className="g" /><div className="g" /></div>
+          </div>
+        );
+      case 'orbit':
+        return <div className="anim-wrap"><div className="anim-orbit" /></div>;
+      case 'loaderbar':
+        return <div className="anim-wrap"><div className="anim-loaderbar" /></div>;
+      case 'hex':
+        return <div className="anim-wrap"><div className="anim-hex" /></div>;
+      case 'cube':
+        return <div className="anim-wrap"><div className="anim-cube" /></div>;
+      case 'ringpulse':
+        return <div className="anim-wrap"><div className="anim-ringpulse" /></div>;
+      case 'heartbeat':
+        return <div className="anim-wrap"><div className="anim-heartbeat" /></div>;
+      case 'dotsnake':
+        return (
+          <div className="anim-wrap">
+            <div className="anim-dotsnake"><div className="d" /><div className="d" /><div className="d" /><div className="d" /><div className="d" /></div>
+          </div>
+        );
+      case 'radar':
+        return <div className="anim-wrap"><div className="anim-radar" /></div>;
       case 'spinner':
       default:
         return (
