@@ -10,6 +10,10 @@ interface BookmarkButtonProps {
       name: string;
       id: string;
     };
+    firstChapter?: {
+      name: string;
+      id: string;
+    };
   };
 }
 

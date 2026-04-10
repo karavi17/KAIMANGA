@@ -136,7 +136,8 @@ export const Details = () => {
               id: mangaSlug, 
               title: data.title, 
               image: data.image,
-              latestChapter: lastChapter ? { id: lastChapter.id, name: lastChapter.name } : undefined
+              latestChapter: lastChapter ? { id: lastChapter.id, name: lastChapter.name } : undefined,
+              firstChapter: firstChapter ? { id: firstChapter.id, name: firstChapter.name } : undefined
             }} />
             <button 
               type="button"

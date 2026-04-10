@@ -234,6 +234,17 @@ export const Bookmarks = () => {
                           <span className="text-gray-400 italic">No info</span>
                         )}
                       </div>
+
+                      <div className="flex items-center gap-2 text-sm md:text-base text-gray-800 dark:text-gray-200">
+                        <span className="font-semibold">First :</span>
+                        {manga.firstChapter ? (
+                          <Link to={`/manga/${manga.id}/${manga.firstChapter.id}`} className="font-bold text-orange-500 hover:underline">
+                            {manga.firstChapter.name}
+                          </Link>
+                        ) : (
+                          <span className="text-gray-400 italic">No info</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
