@@ -194,39 +194,33 @@ export const Reader = () => {
 
       {/* Reader Container */}
       <div 
-        className="max-w-4xl mx-auto pt-20 px-2 cursor-pointer" 
+        className="max-w-4xl mx-auto pt-20 cursor-pointer" 
         ref={readerRef}
         onClick={toggleControls}
       >
-        <div className="flex flex-col items-center space-y-2">
+        <div className="flex flex-col items-center">
           {data.images.map((url, index) => (
             <div 
               key={index} 
-              className="w-full bg-gray-900 animate-pulse rounded-lg overflow-hidden"
-              style={{ minHeight: '600px', aspectRatio: '2/3' }}
+              className="w-full bg-black relative"
             >
               <img 
                 src={getImageUrl(url)} 
                 alt={`Page ${index + 1}`} 
-                className="w-full h-auto object-contain shadow-2xl pointer-events-none transition-opacity duration-500 opacity-0"
+                className="w-full h-auto block pointer-events-none transition-opacity duration-300 opacity-0"
                 loading="lazy"
                 onLoad={(e) => {
                   const target = e.currentTarget;
                   target.classList.remove('opacity-0');
                   const parent = target.parentElement;
                   if (parent) {
-                    parent.classList.remove('animate-pulse', 'bg-gray-900');
-                    parent.style.minHeight = 'auto';
+                    parent.classList.remove('bg-gray-900');
                   }
                 }}
                 onError={(e) => {
                   const img = e.currentTarget;
                   img.src = "https://placehold.co/800x1200?text=Failed+to+load+image";
                   img.classList.remove('opacity-0');
-                  const parent = img.parentElement;
-                  if (parent) {
-                    parent.classList.remove('animate-pulse');
-                  }
                 }}
               />
             </div>
