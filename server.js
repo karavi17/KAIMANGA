@@ -781,9 +781,21 @@ router.get('/details/:id', async (req, res) => {
                   $('.story-info-right li:contains("Author")').text().replace('Author(s) :', '').trim(),
           status: $('.manga-info-text li:contains("Status")').text().replace('Status :', '').trim() ||
                   $('.story-info-right li:contains("Status")').text().replace('Status :', '').trim(),
-          genres: $('.manga-info-text li.genres a').map((i, el) => $(el).text().trim()).get().length > 0 ?
-                  $('.manga-info-text li.genres a').map((i, el) => $(el).text().trim()).get() :
-                  $('.story-info-right .table-value a').map((i, el) => $(el).text().trim()).get(),
+          genres: $('.manga-info-text li.genres a').map((i, el) => {
+                  const href = $(el).attr('href') || '';
+                  const id = href.split('/genre/').pop()?.split('?')[0] || '';
+                  return { id, name: $(el).text().trim() };
+                }).get().length > 0 ?
+                $('.manga-info-text li.genres a').map((i, el) => {
+                  const href = $(el).attr('href') || '';
+                  const id = href.split('/genre/').pop()?.split('?')[0] || '';
+                  return { id, name: $(el).text().trim() };
+                }).get() :
+                $('.story-info-right .table-value a').map((i, el) => {
+                  const href = $(el).attr('href') || '';
+                  const id = href.split('/genre/').pop()?.split('?')[0] || '';
+                  return { id, name: $(el).text().trim() };
+                }).get(),
           description: $('#noidungm').text().trim() || $('#panel-story-info-description').text().replace('Description :', '').trim(),
           chapters,
         };

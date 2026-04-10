@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { mangaService } from '../services/api';
-import type { MangaDetails } from '../types';
+import type { MangaDetails, Manga } from '../types';
+import { MangaCard } from '../components/MangaCard';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { BookOpen, Clock, Tag, User, Star, Play, Zap, Share2 } from 'lucide-react';
 import { getImageUrl } from '../utils/image';
@@ -12,7 +13,9 @@ export const Details = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [data, setData] = useState<MangaDetails | null>(null);
+  const [relatedMangas, setRelatedMangas] = useState<Manga[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingRelated, setLoadingRelated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
 
@@ -37,6 +40,21 @@ export const Details = () => {
         const newHistory = [newItem, ...filteredHistory].slice(0, 50);
         localStorage.setItem('manga-history', JSON.stringify(newHistory));
         
+        // Fetch related manga based on first genre
+        if (detailsData.genres && detailsData.genres.length > 0) {
+          setLoadingRelated(true);
+          try {
+            const firstGenre = detailsData.genres[0];
+            const genreId = typeof firstGenre === 'string' ? firstGenre.toLowerCase().replace(/ /g, '-') : firstGenre.id;
+            const related = await mangaService.getBrowse('hot', 1, { category: genreId });
+            setRelatedMangas(related.mangas.filter(m => m.id !== detailsData.id).slice(0, 6));
+          } catch (err) {
+            console.error('Failed to fetch related manga', err);
+          } finally {
+            setLoadingRelated(false);
+          }
+        }
+
         // Preload hero image
         const img = new Image();
         img.src = getImageUrl(detailsData.image);
@@ -189,14 +207,19 @@ export const Details = () => {
 
             {data.genres && (
               <div className="flex flex-wrap gap-2">
-                {data.genres.map((genre) => (
-                  <span 
-                    key={genre} 
-                    className="px-3 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-bold rounded-full border border-indigo-500/20"
-                  >
-                    {genre}
-                  </span>
-                ))}
+                {data.genres.map((genre) => {
+                  const name = typeof genre === 'string' ? genre : genre.name;
+                  const id = typeof genre === 'string' ? genre.toLowerCase().replace(/ /g, '-') : genre.id;
+                  return (
+                    <Link 
+                      key={id} 
+                      to={`/browse/hot?category=${id}`}
+                      className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:text-orange-600 transition"
+                    >
+                      {name}
+                    </Link>
+                  );
+                })}
               </div>
             )}
 
@@ -248,21 +271,43 @@ export const Details = () => {
         )}
       </section>
 
-      {/* Recommended Section (Simple placeholder using first genre) */}
+      {/* Recommended Section */}
       {data.genres && data.genres.length > 0 && (
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Recommended for You</h2>
-            <Link 
-              to={`/search?q=${data.genres[0]}`} 
-              className="text-sm text-indigo-600 dark:text-indigo-500 hover:underline"
-            >
-              See More {data.genres[0]} Manga
-            </Link>
+            {(() => {
+              const g = data.genres[0];
+              const gName = typeof g === 'string' ? g : g.name;
+              const gId = typeof g === 'string' ? g.toLowerCase().replace(/ /g, '-') : g.id;
+              return (
+                <Link 
+                  to={`/browse/hot?category=${gId}`} 
+                  className="text-sm text-indigo-600 dark:text-indigo-500 hover:underline"
+                >
+                  See More {gName} Manga
+                </Link>
+              );
+            })()}
           </div>
-          <div className="text-gray-500 dark:text-gray-500 text-sm italic bg-gray-100 dark:bg-gray-900/30 p-8 rounded-xl text-center border border-dashed border-gray-300 dark:border-gray-800">
-            More recommendations based on <span className="text-indigo-400 font-bold">"{data.genres[0]}"</span> coming soon!
-          </div>
+          
+          {loadingRelated ? (
+            <div className="flex items-center justify-center py-10">
+              <LoadingSpinner />
+            </div>
+          ) : relatedMangas.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {relatedMangas.map((manga) => (
+                <MangaCard key={manga.id} manga={manga} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-500 dark:text-gray-500 text-sm italic bg-gray-100 dark:bg-gray-900/30 p-8 rounded-xl text-center border border-dashed border-gray-300 dark:border-gray-800">
+              More recommendations based on <span className="text-indigo-400 font-bold">
+                "{typeof data.genres[0] === 'string' ? data.genres[0] : data.genres[0].name}"
+              </span> coming soon!
+            </div>
+          )}
         </section>
       )}
       <ConfirmModal

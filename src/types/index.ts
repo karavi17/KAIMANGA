@@ -7,7 +7,7 @@ export interface Manga {
     name: string;
   };
   views?: string | number;
-  genres?: string[];
+  genres?: (string | { id: string; name: string })[];
   author?: string;
   status?: string;
   description?: string;

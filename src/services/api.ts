@@ -99,8 +99,9 @@ export const mangaService = {
       const genreCounts: Record<string, number> = {};
       allInterests.forEach(m => {
         if (m.genres) {
-          m.genres.forEach((g: string) => {
-            genreCounts[g] = (genreCounts[g] || 0) + 1;
+          m.genres.forEach((g: any) => {
+            const id = typeof g === 'string' ? g.toLowerCase().replace(/ /g, '-') : g.id;
+            genreCounts[id] = (genreCounts[id] || 0) + 1;
           });
         }
       });
