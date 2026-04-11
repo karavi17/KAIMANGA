@@ -101,11 +101,38 @@ app.get('/api/proxy-image', async (req, res) => {
   }
 
   try {
-    const response = await axios.get(imageUrl, {
-      responseType: 'arraybuffer',
-      headers: { ...HEADERS, Referer: BASE_URL + '/' },
-      timeout: 10000,
-    });
+    const urlObj = new URL(imageUrl);
+    const origin = urlObj.origin;
+    
+    let response;
+    try {
+      // 1. Try with origin referer (most common for CDNs)
+      response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        headers: { 
+          ...HEADERS, 
+          'Referer': origin + '/',
+          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+          'Sec-Fetch-Dest': 'image',
+          'Sec-Fetch-Mode': 'no-cors',
+          'Sec-Fetch-Site': 'cross-site'
+        },
+        timeout: 10000,
+      });
+    } catch (e) {
+      // 2. Try with BASE_URL referer (some hosts expect the source site)
+      console.log(`Retrying image fetch with BASE_URL referer: ${imageUrl}`);
+      response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        headers: { 
+          ...HEADERS, 
+          'Referer': BASE_URL + '/',
+          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+        },
+        timeout: 15000,
+      });
+    }
+
     const contentType = response.headers['content-type'] || 'image/jpeg';
     const imageData = { data: response.data, contentType };
     imageCache.set(imageUrl, imageData);
@@ -114,6 +141,7 @@ app.get('/api/proxy-image', async (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=604800');
     res.send(response.data);
   } catch (error) {
+    console.error(`Failed to proxy image: ${imageUrl} - ${error.message}`);
     res.status(500).send('Error');
   }
 });
