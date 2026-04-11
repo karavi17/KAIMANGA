@@ -936,10 +936,10 @@ router.get('/read/:mangaId/:chapterId', async (req, res) => {
       // 2. Fetch Chapter List for Navigation
       let allChapters = [];
       try {
-        const chaptersUrl = `${BASE_URL}/api/manga/${mangaId}/chapters`;
-        allChapters = await fetchChaptersFromJsonApi(chaptersUrl);
+        const slugCandidates = collectMangaSlugCandidates($, mangaId);
+        allChapters = await resolveMangaChapters($, mangaId, slugCandidates);
       } catch (e) {
-        console.warn('Failed to fetch chapters from API for navigation:', e.message);
+        console.warn('Failed to fetch chapters for navigation:', e.message);
       }
 
       // Fallback for allChapters if API fails
