@@ -56,10 +56,18 @@ app.use('/api/manga', router);
 
 const BASE_URL = 'https://www.mangakakalot.fan';
 const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
   'Accept-Language': 'en-US,en;q=0.9',
   'Referer': BASE_URL + '/',
+  'sec-ch-ua': '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+  'sec-fetch-dest': 'document',
+  'sec-fetch-mode': 'navigate',
+  'sec-fetch-site': 'none',
+  'sec-fetch-user': '?1',
+  'upgrade-insecure-requests': '1'
 };
 
 // Helper for caching
@@ -106,31 +114,49 @@ app.get('/api/proxy-image', async (req, res) => {
     
     let response;
     try {
-      // 1. Try with origin referer (most common for CDNs)
+      // 1. Try with origin referer (common for CDNs like mangakakalot)
       response = await axios.get(imageUrl, {
         responseType: 'arraybuffer',
         headers: { 
-          ...HEADERS, 
+          'User-Agent': HEADERS['User-Agent'],
           'Referer': origin + '/',
           'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-          'Sec-Fetch-Dest': 'image',
-          'Sec-Fetch-Mode': 'no-cors',
-          'Sec-Fetch-Site': 'cross-site'
+          'Accept-Language': 'en-US,en;q=0.9',
+          'sec-ch-ua': HEADERS['sec-ch-ua'],
+          'sec-ch-ua-mobile': '?0',
+          'sec-ch-ua-platform': '"Windows"',
+          'sec-fetch-dest': 'image',
+          'sec-fetch-mode': 'no-cors',
+          'sec-fetch-site': 'cross-site'
         },
         timeout: 10000,
       });
     } catch (e) {
-      // 2. Try with BASE_URL referer (some hosts expect the source site)
-      console.log(`Retrying image fetch with BASE_URL referer: ${imageUrl}`);
-      response = await axios.get(imageUrl, {
-        responseType: 'arraybuffer',
-        headers: { 
-          ...HEADERS, 
-          'Referer': BASE_URL + '/',
-          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
-        },
-        timeout: 15000,
-      });
+      console.log(`Proxy Image - Try 1 failed: ${imageUrl} (${e.message}). Retrying with BASE_URL referer...`);
+      try {
+        // 2. Try with BASE_URL referer
+        response = await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          headers: { 
+            'User-Agent': HEADERS['User-Agent'],
+            'Referer': BASE_URL + '/',
+            'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9'
+          },
+          timeout: 10000,
+        });
+      } catch (e2) {
+        console.log(`Proxy Image - Try 2 failed: ${imageUrl} (${e2.message}). Retrying with NO referer...`);
+        // 3. Try with NO referer (sometimes this works when referer is blocked)
+        response = await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          headers: { 
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36',
+            'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+          },
+          timeout: 15000,
+        });
+      }
     }
 
     const contentType = response.headers['content-type'] || 'image/jpeg';
@@ -141,7 +167,7 @@ app.get('/api/proxy-image', async (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=604800');
     res.send(response.data);
   } catch (error) {
-    console.error(`Failed to proxy image: ${imageUrl} - ${error.message}`);
+    console.error(`Final Proxy Image failure for: ${imageUrl} - ${error.message}`);
     res.status(500).send('Error');
   }
 });
@@ -529,27 +555,55 @@ async function fetchChaptersFromJsonApi(chaptersListUrl) {
   const chapters = [];
   let offset = 0;
   const limit = 100;
+  let retryCount = 0;
+  const maxRetries = 2;
+
   while (true) {
-    const { data: json } = await axios.get(chaptersListUrl, {
-      headers: { ...HEADERS, Accept: 'application/json, text/plain, */*' },
-      params: { limit, offset },
-      timeout: 20000,
-      validateStatus: (s) => s < 500,
-    });
-    if (!json?.success || !Array.isArray(json.data?.chapters)) break;
-    for (const ch of json.data.chapters) {
-      chapters.push({
+    try {
+      console.log(`Fetching chapters JSON: ${chaptersListUrl} (offset: ${offset})`);
+      const { data: json } = await axios.get(chaptersListUrl, {
+        headers: { 
+          ...HEADERS, 
+          'Accept': 'application/json, text/plain, */*',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        params: { limit, offset },
+        timeout: 15000,
+        validateStatus: (s) => s < 500,
+      });
+
+      if (!json?.success || !Array.isArray(json.data?.chapters)) {
+        console.warn(`JSON API returned success:false or no chapters at offset ${offset}`);
+        break;
+      }
+
+      const newChapters = json.data.chapters.map(ch => ({
         id: ch.chapter_slug || '',
         name: (ch.chapter_name || '').trim(),
         date: ch.updated_at
           ? new Date(ch.updated_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
           : '',
-      });
+      })).filter(c => c.id);
+
+      chapters.push(...newChapters);
+      
+      console.log(`Fetched ${newChapters.length} chapters. Total: ${chapters.length}`);
+
+      if (!json.data.pagination?.has_more || newChapters.length === 0) break;
+      offset += limit;
+      retryCount = 0; // Reset retry count on success
+    } catch (e) {
+      if (retryCount < maxRetries) {
+        retryCount++;
+        console.warn(`Error fetching chapters JSON (retry ${retryCount}): ${e.message}`);
+        await new Promise(r => setTimeout(r, 1000));
+        continue;
+      }
+      console.error(`Final error fetching chapters JSON: ${e.message}`);
+      break;
     }
-    if (!json.data.pagination?.has_more) break;
-    offset += limit;
   }
-  return chapters.filter((c) => c.id);
+  return chapters;
 }
 
 /**
@@ -883,17 +937,7 @@ router.get('/read/:mangaId/:chapterId', async (req, res) => {
       let allChapters = [];
       try {
         const chaptersUrl = `${BASE_URL}/api/manga/${mangaId}/chapters`;
-        const { data: chaptersJson } = await axios.get(chaptersUrl, { 
-          headers: { ...HEADERS, Accept: 'application/json' },
-          timeout: 10000
-        });
-        
-        if (chaptersJson?.success && Array.isArray(chaptersJson.data?.chapters)) {
-          allChapters = chaptersJson.data.chapters.map(ch => ({
-            id: ch.chapter_slug,
-            name: ch.chapter_name
-          }));
-        }
+        allChapters = await fetchChaptersFromJsonApi(chaptersUrl);
       } catch (e) {
         console.warn('Failed to fetch chapters from API for navigation:', e.message);
       }
